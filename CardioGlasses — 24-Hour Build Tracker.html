@@ -1,0 +1,1282 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}</style><style>:root{color-scheme:light dark;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}}:root[data-theme="dark"]{color-scheme:dark;--md-bg:#0d0d0d;--md-text:rgba(255,255,255,.85);--md-muted:rgba(255,255,255,.6);--md-fill:rgba(255,255,255,.06);--md-fill-strong:rgba(255,255,255,.09);--md-rule:rgba(255,255,255,.14);--md-rule-strong:rgba(255,255,255,.22);--md-link:hsl(210 100% 72%)}:root[data-theme="light"]{color-scheme:light}@media print{:root,:root[data-theme="dark"]{color-scheme:light;--md-bg:#fff;--md-text:rgba(0,0,0,.8);--md-muted:rgba(0,0,0,.6);--md-fill:rgba(0,0,0,.04);--md-fill-strong:rgba(0,0,0,.06);--md-rule:rgba(0,0,0,.1);--md-rule-strong:rgba(0,0,0,.16);--md-link:hsl(210 100% 45%)}}body{background:var(--md-bg);color:var(--md-text);max-width:720px;margin:0 auto;padding:32px;display:flex;flex-direction:column;gap:10px;font:14px/1.55 -apple-system,BlinkMacSystemFont,'SF Pro','Segoe UI',sans-serif;overflow-wrap:break-word}body>:first-child{margin-top:0}h1,h2,h3,h4,h5,h6{margin:6px 0 0;line-height:1.25;font-weight:600;text-wrap:balance}h1{font-size:1.35em}h2{font-size:1.15em;color:var(--md-muted)}h3,h4,h5,h6{font-size:1em}p,ul,ol,blockquote,table,pre,hr{margin:0}strong{font-weight:600}a{color:var(--md-link);text-decoration:none}a:hover{text-decoration:underline}ul,ol{display:flex;flex-direction:column;gap:6px;padding-left:22px}ul{list-style:disc}ol{list-style:decimal}:is(li,td,th)>*+:is(p,ul,ol,blockquote){margin-top:6px}blockquote{display:flex;flex-direction:column;gap:10px;border-left:2px solid var(--md-rule);padding-left:10px;color:var(--md-muted)}:not(pre)>code{background:var(--md-fill);padding:1px 3px;border-radius:4px;font:.92em 'SF Mono',ui-monospace,Menlo,Consolas,monospace}a>code{background:none;color:inherit}pre{background:var(--md-fill);padding:10px 12px;border-radius:6px;overflow-x:auto;font:12px/1.5 'SF Mono',ui-monospace,Menlo,Consolas,monospace;margin-block:4px}pre code{background:none;padding:0;font:inherit}table{width:100%;border-collapse:separate;border-spacing:2px;font:inherit}th,td{padding:6px 8px;border-radius:3px;text-align:left;vertical-align:top}th{background:var(--md-fill-strong);font-weight:600}td{background:var(--md-fill)}:is(th,td) :not(pre)>code{background:transparent}hr{border:0;border-top:1px solid var(--md-rule-strong);margin-block:10px}img{max-width:100%;height:auto;border-radius:4px}</style>
+</head><body>
+<h1>🫀 CardioGlasses — 24-Hour Build Tracker</h1>
+<p><em>Single source of truth. Tell Claude: &quot;H-03 complete&quot;, &quot;AI blocked: no usable PPG data&quot;, &quot;add task…&quot;. Claude edits this page.</em></p>
+<h2>📊 Live Dashboard</h2>
+<p><strong>Overall:</strong> 0% (0 / 35 core tasks) · <strong>Current blocker:</strong> None · <strong>Next milestone:</strong> M1 (Hour 5) · <strong>Last updated:</strong> Pre-hackathon, Oct 3 2026</p>
+<table>
+<thead>
+<tr>
+<th>Track</th>
+<th>Status</th>
+<th>Done</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hardware</td>
+<td>⬜</td>
+<td>0 / 6</td>
+</tr>
+<tr>
+<td>AI</td>
+<td>⬜</td>
+<td>0 / 8</td>
+</tr>
+<tr>
+<td>Software</td>
+<td>⬜</td>
+<td>0 / 8</td>
+</tr>
+<tr>
+<td>Integration</td>
+<td>⬜</td>
+<td>0 / 4</td>
+</tr>
+<tr>
+<td>End-to-End</td>
+<td>⬜</td>
+<td>0 / 4</td>
+</tr>
+<tr>
+<td>Reliability</td>
+<td>⬜</td>
+<td>0 / 5</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Status key:</strong> ⬜ Not started · 🟡 In progress · 🟢 Complete · 🔴 Blocked · ⚪ Cut<br>
+<strong>Tags:</strong> <strong>KNOW</strong> = from our project doc · <strong>PLAN</strong> = our proposed approach · <strong>OPEN</strong> = undecided (see Open Decisions)</p>
+<hr>
+<h2>1. What We Are Building</h2>
+<p><strong>One sentence:</strong> Glasses with a pulse sensor and motion sensor that watch a heart patient's body all day, compare it to <em>that person's</em> normal and medical history, and speak up only when it matters.</p>
+<p><strong>The problem (KNOW):</strong> People with heart disease are monitored only at clinic visits. At home, changes go unnoticed. Wearables show raw numbers (heart rate) but don't say <em>&quot;is this unusual for me, given what I'm doing and my history, and should I act?&quot;</em></p>
+<p><strong>The user (KNOW):</strong> An older adult with existing cardiovascular disease or high risk.</p>
+<ul>
+<li><em>Environment:</em> home, daily life, exercise, recovery.</li>
+<li><em>Does manually today:</em> checks pulse or an app, guesses whether a number is worrying.</li>
+<li><em>Doesn't know:</em> whether a change is normal for them, whether it's persistent, or what to do.</li>
+<li><em>Why useful:</em> &quot;We'll tell you when your data matters&quot; — no screen-watching.</li>
+</ul>
+<p><strong>The solution:</strong> Glasses stream pulse (PPG) and motion (IMU). Software works out heart rate, whether the person is resting or moving, and whether the signal is trustworthy. It compares that to the person's baseline and clinical record (FinchNode), decides <em>normal / monitor / notify / escalate</em>, then speaks a short ElevenLabs message and shows the full explanation on the phone.</p>
+<p><strong>Core loop</strong></p>
+<pre><code class="language-text">Physical environment → Observation → Processing → Measurement → Useful information → User action
+ (patient wears         (PPG + IMU     (filter, find    (HR, beat timing,   (concern level + plain-   (sit down, check
+  glasses, moves/rests)  raw samples)   beats, classify  activity, signal    English reason + voice    phone; system keeps
+                                        motion)          quality, deviation) + phone card)             monitoring)
+</code></pre>
+<p><strong>Measured:</strong> heart rate, beat timing, motion, signal quality. <strong>Inferred:</strong> concern level (never &quot;heart attack&quot;).<br>
+<strong>Not a medical device:</strong> wording is &quot;guidance / check in&quot;, never a diagnosis.</p>
+<hr>
+<h2>2. 24-Hour MVP</h2>
+<p><em>Smallest system proving: live heart data + personal baseline + clinical context → contextual alert → voice + explanation → monitoring continues.</em></p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Items</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Must Build</strong></td>
+<td>PPG + IMU on glasses streaming live · HR extraction · resting/moving detection · signal-quality check · patient baseline (60s calibration) · one FinchNode synthetic high-risk patient · decision (rules gate + LLM explanation) · ElevenLabs voice alert · phone-friendly dashboard (live HR, status, context, reason, next step) · alert-then-recovery loop · <strong>replay mode</strong> (recorded data through the same pipeline)</td>
+</tr>
+<tr>
+<td><strong>Should Build</strong></td>
+<td>History/trend chart · alert history list · cooldown/debounce so alerts don't spam · pre-generated fallback audio</td>
+</tr>
+<tr>
+<td><strong>Could Build</strong></td>
+<td>HRV / beat-irregularity flag · simple risk tier from clinical data · rehab mode (one exercise) · AirPods routing</td>
+</tr>
+<tr>
+<td><strong>Out of Scope</strong></td>
+<td>Stroke/heart-attack prediction · SpO₂ / respiratory rate · plaque/apnea · training big models · native mobile app · auto-contacting clinicians · custom enclosure/PCB · multi-patient · login/auth · voice replies from patient · Presage</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Simplifications:</strong> baseline = rolling mean/SD of resting HR (no ML) · &quot;risk&quot; = tier read from FinchNode conditions · demo event is <em>controlled and replayable</em>.</p>
+<hr>
+<h2>3. Architecture</h2>
+<pre class="mermaid">flowchart LR
+  P[&#34;Patient wearing glasses&#34;] --&gt; S[&#34;Sensor module&lt;br/&gt;PPG + IMU + microcontroller&#34;]
+  S --&gt;|&#34;raw samples over USB serial&#34;| SP[&#34;Signal processing&lt;br/&gt;HR, activity, quality&#34;]
+  R[&#34;Replay player&lt;br/&gt;recorded CSV&#34;] -.-&gt;|&#34;same format&#34;| SP
+  SP --&gt;|&#34;Reading every 2s&#34;| B[&#34;Backend API&lt;br/&gt;FastAPI&#34;]
+  F[&#34;FinchNode&lt;br/&gt;synthetic patient&#34;] --&gt;|&#34;PatientContext&#34;| B
+  B &lt;--&gt; D[(&#34;Database&lt;br/&gt;Postgres or SQLite&#34;)]
+  B --&gt; DL[&#34;Decision layer&lt;br/&gt;rules gate + LLM reasoning&#34;]
+  DL --&gt;|&#34;Alert&#34;| B
+  B --&gt; V[&#34;ElevenLabs voice&#34;]
+  V --&gt; A[&#34;Audio device&#34;]
+  B --&gt;|&#34;websocket&#34;| UI[&#34;Phone dashboard&#34;]
+</pre>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Does</th>
+<th>In → Out</th>
+<th>Tech</th>
+<th>MVP?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sensor module</td>
+<td>Senses pulse + motion</td>
+<td>body → raw samples with timestamps</td>
+<td>PPG breakout + IMU + ESP32/Arduino-class board (<strong>OPEN</strong> exact parts)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Signal processing</td>
+<td>Cleans signal, finds beats, classifies motion, scores quality</td>
+<td>raw samples → <code>Reading</code></td>
+<td>Python (numpy/scipy) on laptop</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Replay player</td>
+<td>Plays recorded/synthetic data as if live</td>
+<td>CSV → raw samples</td>
+<td>Python script</td>
+<td>✅ insurance</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>Hub: receives readings, loads context, stores, triggers decision/voice/UI</td>
+<td>Reading + PatientContext → stored data, Alert</td>
+<td>Python FastAPI + websocket</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>FinchNode</td>
+<td>Supplies synthetic patient record</td>
+<td>patient ID → conditions, meds, age</td>
+<td>FinchNode API (<strong>OPEN</strong> fields)</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>Keeps history for baseline + timeline</td>
+<td>readings/alerts ↔ queries</td>
+<td>SQLite first; Postgres/Tiger Data if time</td>
+<td>✅ (simple)</td>
+</tr>
+<tr>
+<td>Decision layer</td>
+<td>Gate: quality OK + stationary + deviation persists. Then LLM writes the reason in context. Fixed action set.</td>
+<td>Reading + baseline + context → <code>Alert</code></td>
+<td>Python rules + Claude API</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Voice</td>
+<td>Speaks the alert</td>
+<td><code>voice_text</code> → audio</td>
+<td>ElevenLabs TTS</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Dashboard</td>
+<td>Shows state, why, next step</td>
+<td>websocket → screen</td>
+<td>Plain HTML/JS or small React page</td>
+<td>✅</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>4. Team Split</h2>
+<pre class="mermaid">flowchart LR
+  HW[&#34;P1 Hardware&#34;] --&gt;|&#34;raw samples (Contract A)&#34;| AI[&#34;P2 AI&#34;]
+  AI --&gt;|&#34;Reading + Alert decision (Contract B/C)&#34;| SW[&#34;P3 Software&#34;]
+  SW --&gt;|&#34;PatientContext + config (Contract D)&#34;| AI
+  SW -.-&gt;|&#34;sample rate / port settings&#34;| HW
+  HW -.-&gt;|&#34;recorded sessions&#34;| AI
+</pre>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>P1 Hardware</strong></th>
+<th><strong>P2 AI</strong></th>
+<th><strong>P3 Software / Systems</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Owns</strong></td>
+<td>Getting trustworthy live PPG + IMU off the glasses</td>
+<td>Turning raw samples into measurements and a decision</td>
+<td>Everything that connects and shows it</td>
+</tr>
+<tr>
+<td><strong>Tasks</strong></td>
+<td>H-01…H-06</td>
+<td>A-01…A-08</td>
+<td>S-01…S-08, plus integration lead</td>
+</tr>
+<tr>
+<td><strong>Needs from others</strong></td>
+<td>Sample format + rate (P3/P2, Hr 1)</td>
+<td>Recorded sessions from P1; PatientContext from P3</td>
+<td><code>Reading</code>/<code>Alert</code> shapes from P2; stream from P1</td>
+</tr>
+<tr>
+<td><strong>Produces</strong></td>
+<td>Serial stream (Contract A) · 3 labelled recordings (rest / moving / elevated)</td>
+<td><code>Reading</code> + <code>Alert</code> objects · replay generator · baseline logic</td>
+<td>Running backend, DB, FinchNode pull, voice, dashboard</td>
+</tr>
+<tr>
+<td><strong>Done =</strong></td>
+<td>Glasses stream clean HR-quality PPG + motion for 5 min without dropouts</td>
+<td>Raw stream → correct Reading → correct concern level on all 3 scenarios</td>
+<td>Reading in → Alert out → voice plays + dashboard explains</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Rule:</strong> P2 builds the replay generator by Hour 2 so P3 never waits on hardware. P1 hands recordings to P2 as soon as one exists. Everyone helps whoever is blocked.</p>
+<hr>
+<h2>5. Contracts Between Components</h2>
+<p><em>Agree in Hour 0–1. Don't change without telling everyone. Time = Unix ms.</em></p>
+<p><strong>A — Hardware → AI</strong> (one JSON line per sample over USB serial, ~50 Hz; same columns in replay CSV)</p>
+<pre><code class="language-json">{&#34;t&#34;: 1760000000123, &#34;ppg&#34;: 51234, &#34;ax&#34;: 0.02, &#34;ay&#34;: -0.98, &#34;az&#34;: 0.10, &#34;gx&#34;: 0.5, &#34;gy&#34;: 0.1, &#34;gz&#34;: 0.0}
+</code></pre>
+<p>(PPG raw only for MVP. 2nd PPG channel optional. <strong>OPEN D-06</strong>: raw vs features — default raw.)</p>
+<p><strong>B — AI → Software</strong> (<code>Reading</code>, every ~2 s)</p>
+<pre><code class="language-json">{&#34;t&#34;: 1760000002000, &#34;hr&#34;: 78, &#34;ibi_ms&#34;: [790, 772, 765], &#34;activity&#34;: &#34;resting|moving&#34;,
+ &#34;quality&#34;: 0.91, &#34;baseline_hr&#34;: 68, &#34;deviation&#34;: 1.8, &#34;persist_s&#34;: 45}
+</code></pre>
+<p><strong>C — AI → Software</strong> (<code>Alert</code>, only on state change)</p>
+<pre><code class="language-json">{&#34;t&#34;: 1760000050000, &#34;level&#34;: &#34;normal|monitor|notify|escalate&#34;, &#34;confidence&#34;: 0.8,
+ &#34;headline&#34;: &#34;Elevated heart rate at rest&#34;, &#34;reason&#34;: &#34;…compared with your baseline and history…&#34;,
+ &#34;voice_text&#34;: &#34;Your heart rate has stayed high while you&#39;re resting. Please sit down and check your phone.&#34;,
+ &#34;next_step&#34;: &#34;Sit down and review&#34;, &#34;reading&#34;: { … }}
+</code></pre>
+<p><strong>D — Software → AI</strong> (<code>PatientContext</code>, loaded at start)</p>
+<pre><code class="language-json">{&#34;patient_id&#34;: &#34;demo-1&#34;, &#34;age&#34;: 71, &#34;conditions&#34;: [&#34;…&#34;], &#34;medications&#34;: [&#34;…&#34;], &#34;risk_tier&#34;: &#34;high&#34;,
+ &#34;config&#34;: {&#34;min_quality&#34;: 0.6, &#34;persist_s&#34;: 30, &#34;deviation_trigger&#34;: 2.0, &#34;cooldown_s&#34;: 120}}
+</code></pre>
+<p><strong>Rules:</strong> unknown/missing values = <code>null</code>, never omitted · levels are exactly those four strings · low quality → no alert, <code>quality</code> reported honestly.</p>
+<hr>
+<h2>6. Implementation Workflow (one event, start to finish)</h2>
+<pre class="mermaid">sequenceDiagram
+  participant G as Glasses
+  participant SP as Signal processing
+  participant B as Backend
+  participant F as FinchNode
+  participant DL as Decision
+  participant V as ElevenLabs
+  participant UI as Phone
+  B-&gt;&gt;F: fetch patient (startup)
+  F--&gt;&gt;B: PatientContext
+  G-&gt;&gt;SP: raw PPG + IMU
+  SP-&gt;&gt;B: Reading (HR, activity, quality)
+  B-&gt;&gt;DL: Reading + baseline + context
+  DL--&gt;&gt;B: Alert (notify + reason)
+  B-&gt;&gt;V: voice_text
+  V--&gt;&gt;B: audio
+  B-&gt;&gt;UI: Alert + live data (websocket)
+  Note over G,UI: Patient rests, HR normalizes → level returns to normal → monitoring continues
+</pre>
+<ol>
+<li>Backend starts, pulls the synthetic patient from FinchNode, builds <code>PatientContext</code>.</li>
+<li>Glasses stream raw PPG + IMU to the laptop (or replay player does).</li>
+<li>Signal processing filters PPG, finds beats → HR + beat intervals; IMU → resting/moving; scores quality.</li>
+<li>Every ~2 s a <code>Reading</code> is sent to the backend and stored.</li>
+<li>First 60 s at rest = <strong>calibration</strong>: sets <code>baseline_hr</code>.</li>
+<li>Decision gate: quality ≥ threshold AND resting AND deviation persists → run reasoning step. Otherwise <code>normal</code>/<code>monitor</code>.</li>
+<li>LLM (given reading, baseline, conditions) writes <code>reason</code> + <code>voice_text</code>, picking only from the four levels.</li>
+<li>Backend sends text to ElevenLabs → audio plays; same alert pushed to dashboard.</li>
+<li>Monitoring never stops; when readings return to baseline the state drops back to <code>normal</code>.</li>
+</ol>
+<hr>
+<h2>7. Task Checklist</h2>
+<p><em>Pri: P0 must · P1 should · P2 could. Update Status as you go.</em></p>
+<h3>Phase 0 — Setup (Hour 0–1)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Pri</th>
+<th>Needs</th>
+<th>Status</th>
+<th>Done when</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S-01</td>
+<td>Repo, folders (<code>hw/ ai/ backend/ web/ data/</code>), paste contracts into <code>CONTRACTS.md</code></td>
+<td>SW</td>
+<td>P0</td>
+<td>—</td>
+<td>⬜</td>
+<td>All 3 can push; contracts agreed</td>
+<td></td>
+</tr>
+<tr>
+<td>S-02</td>
+<td>FastAPI skeleton + <code>/health</code> + <code>.env</code></td>
+<td>SW</td>
+<td>P0</td>
+<td>S-01</td>
+<td>⬜</td>
+<td>Runs on laptop, others can hit it</td>
+<td></td>
+</tr>
+<tr>
+<td>S-03</td>
+<td>Get keys/access: ElevenLabs, FinchNode, Claude API, Tiger Data (optional)</td>
+<td>SW</td>
+<td>P0</td>
+<td>—</td>
+<td>⬜</td>
+<td>Each key tested with one call</td>
+<td>Ask sponsor tables early</td>
+</tr>
+<tr>
+<td>H-01</td>
+<td>Verify parts: sensor, IMU, board power on; pick placement candidates</td>
+<td>HW</td>
+<td>P0</td>
+<td>—</td>
+<td>⬜</td>
+<td>Board flashes, sensor answers</td>
+<td></td>
+</tr>
+<tr>
+<td>A-01</td>
+<td>Python env + load any sample PPG, plot it</td>
+<td>AI</td>
+<td>P0</td>
+<td>S-01</td>
+<td>⬜</td>
+<td>Notebook plots a filtered pulse</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>Phase 1 — Components in parallel (Hour 1–5)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Pri</th>
+<th>Needs</th>
+<th>Status</th>
+<th>Done when</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>H-02</td>
+<td>Read raw PPG, print values</td>
+<td>HW</td>
+<td>P0</td>
+<td>H-01</td>
+<td>⬜</td>
+<td>Visible pulse wave when finger on sensor</td>
+<td></td>
+</tr>
+<tr>
+<td>H-03</td>
+<td>Read IMU accel/gyro</td>
+<td>HW</td>
+<td>P0</td>
+<td>H-01</td>
+<td>⬜</td>
+<td>Values change when moved</td>
+<td></td>
+</tr>
+<tr>
+<td>H-04</td>
+<td>Stream Contract A over USB serial @ ~50 Hz</td>
+<td>HW</td>
+<td>P0</td>
+<td>H-02, H-03</td>
+<td>⬜</td>
+<td><code>serial → file</code> captures valid JSON lines</td>
+<td><strong>M2 gate</strong></td>
+</tr>
+<tr>
+<td>H-05</td>
+<td>Mount on glasses; test temple vs nose-bridge</td>
+<td>HW</td>
+<td>P0</td>
+<td>H-04</td>
+<td>⬜</td>
+<td>Pulse visible while worn and still</td>
+<td>OPEN D-08</td>
+</tr>
+<tr>
+<td>H-06</td>
+<td>Record 3 sessions (rest 2 min, moving, elevated-then-rest) to <code>data/</code></td>
+<td>HW</td>
+<td>P0</td>
+<td>H-05</td>
+<td>⬜</td>
+<td>3 CSVs in Contract A format</td>
+<td>Fallback: finger-on-sensor</td>
+</tr>
+<tr>
+<td>A-02</td>
+<td>Replay player + synthetic generator (rest / elevated scenarios)</td>
+<td>AI</td>
+<td>P0</td>
+<td>A-01</td>
+<td>⬜</td>
+<td>Emits Contract A at real-time speed</td>
+<td>Needed by Hr 2</td>
+</tr>
+<tr>
+<td>A-03</td>
+<td>HR + beat intervals (bandpass, peak detect)</td>
+<td>AI</td>
+<td>P0</td>
+<td>A-01</td>
+<td>⬜</td>
+<td>HR within ~5 bpm of reference on a clip</td>
+<td></td>
+</tr>
+<tr>
+<td>A-04</td>
+<td>Signal-quality score 0–1</td>
+<td>AI</td>
+<td>P0</td>
+<td>A-03</td>
+<td>⬜</td>
+<td>Noisy clip scores low, clean scores high</td>
+<td></td>
+</tr>
+<tr>
+<td>A-05</td>
+<td>Activity: resting / moving from IMU</td>
+<td>AI</td>
+<td>P0</td>
+<td>A-01</td>
+<td>⬜</td>
+<td>Correct on rest &amp; moving recordings</td>
+<td></td>
+</tr>
+<tr>
+<td>A-06</td>
+<td>Baseline: 60 s calibration → mean/SD resting HR; deviation score</td>
+<td>AI</td>
+<td>P0</td>
+<td>A-03, A-05</td>
+<td>⬜</td>
+<td>Produces <code>baseline_hr</code>, <code>deviation</code>, <code>persist_s</code></td>
+<td></td>
+</tr>
+<tr>
+<td>A-07</td>
+<td>Rules gate + concern levels</td>
+<td>AI</td>
+<td>P0</td>
+<td>A-06, S-05</td>
+<td>⬜</td>
+<td>Rest→normal; sustained high at rest→notify; high+moving→normal</td>
+<td></td>
+</tr>
+<tr>
+<td>A-08</td>
+<td>LLM reasoning: reason + voice_text, constrained to 4 levels</td>
+<td>AI</td>
+<td>P0</td>
+<td>A-07</td>
+<td>⬜</td>
+<td>Valid Contract C JSON every time</td>
+<td>Cache result</td>
+</tr>
+<tr>
+<td>S-04</td>
+<td><code>POST /readings</code>, DB tables (readings, alerts)</td>
+<td>SW</td>
+<td>P0</td>
+<td>S-02</td>
+<td>⬜</td>
+<td>Fake Reading stored and queryable</td>
+<td></td>
+</tr>
+<tr>
+<td>S-05</td>
+<td>FinchNode → <code>PatientContext</code> (Contract D)</td>
+<td>SW</td>
+<td>P0</td>
+<td>S-03</td>
+<td>⬜</td>
+<td>Patient JSON served at <code>/patient</code></td>
+<td>OPEN D-07; hardcode fallback</td>
+</tr>
+<tr>
+<td>S-06</td>
+<td>Dashboard v0 on mock data (HR, status, context card, reason panel)</td>
+<td>SW</td>
+<td>P0</td>
+<td>S-02</td>
+<td>⬜</td>
+<td>Opens on phone browser</td>
+<td></td>
+</tr>
+<tr>
+<td>S-07</td>
+<td>ElevenLabs: text → audio plays</td>
+<td>SW</td>
+<td>P0</td>
+<td>S-03</td>
+<td>⬜</td>
+<td>Hear sample alert</td>
+<td></td>
+</tr>
+<tr>
+<td>S-08</td>
+<td>Websocket push to dashboard</td>
+<td>SW</td>
+<td>P0</td>
+<td>S-04, S-06</td>
+<td>⬜</td>
+<td>Dashboard updates live from stored data</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>Phase 2 — First integration (Hour 5–9)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Pri</th>
+<th>Needs</th>
+<th>Status</th>
+<th>Done when</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>I-01</td>
+<td>Raw stream (replay first, then glasses) → processing → Readings</td>
+<td>AI+HW</td>
+<td>P0</td>
+<td>A-03…A-06, A-02</td>
+<td>⬜</td>
+<td>Live Readings print from replay</td>
+<td><strong>M3</strong></td>
+</tr>
+<tr>
+<td>I-02</td>
+<td>Readings → backend → DB → dashboard</td>
+<td>AI+SW</td>
+<td>P0</td>
+<td>I-01, S-04, S-08</td>
+<td>⬜</td>
+<td>Dashboard shows replay HR live</td>
+<td><strong>M4</strong></td>
+</tr>
+<tr>
+<td>I-03</td>
+<td>Backend runs decision → Alert saved</td>
+<td>AI+SW</td>
+<td>P0</td>
+<td>A-08, I-02, S-05</td>
+<td>⬜</td>
+<td>Elevated replay creates an Alert</td>
+<td></td>
+</tr>
+<tr>
+<td>I-04</td>
+<td>Alert → voice + dashboard alert card</td>
+<td>SW</td>
+<td>P0</td>
+<td>I-03, S-07</td>
+<td>⬜</td>
+<td>Sound + card fire together</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>Phase 3 — End-to-end (Hour 9–13)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Pri</th>
+<th>Needs</th>
+<th>Status</th>
+<th>Done when</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E-01</td>
+<td>Full loop on <strong>replay</strong>, no hardware</td>
+<td>All</td>
+<td>P0</td>
+<td>I-04</td>
+<td>⬜</td>
+<td>Rest → elevated → alert → recover → normal</td>
+<td>Safe fallback ✅</td>
+</tr>
+<tr>
+<td>E-02</td>
+<td>Full loop on <strong>live glasses</strong></td>
+<td>All</td>
+<td>P0</td>
+<td>E-01, H-06</td>
+<td>⬜</td>
+<td>Same result with a real person</td>
+<td><strong>M5</strong></td>
+</tr>
+<tr>
+<td>E-03</td>
+<td>Recovery logic: alert clears, monitoring continues</td>
+<td>AI+SW</td>
+<td>P0</td>
+<td>E-01</td>
+<td>⬜</td>
+<td>State returns to normal without restart</td>
+<td></td>
+</tr>
+<tr>
+<td>E-04</td>
+<td>&quot;Why&quot; panel: baseline vs now, activity, quality, context, next step</td>
+<td>SW</td>
+<td>P1</td>
+<td>E-01</td>
+<td>⬜</td>
+<td>Reads clearly without explanation</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h3>Phase 4 — Reliability (Hour 13–18)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Pri</th>
+<th>Needs</th>
+<th>Status</th>
+<th>Done when</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>R-01</td>
+<td>Failure cases (see §11) handled</td>
+<td>All</td>
+<td>P0</td>
+<td>E-02</td>
+<td>⬜</td>
+<td>Each case tested once</td>
+<td></td>
+</tr>
+<tr>
+<td>R-02</td>
+<td>Cooldown/debounce; no alert on poor quality</td>
+<td>AI</td>
+<td>P0</td>
+<td>E-02</td>
+<td>⬜</td>
+<td>No repeat alerts within cooldown</td>
+<td></td>
+</tr>
+<tr>
+<td>R-03</td>
+<td>Pre-generated audio fallback if ElevenLabs/Wi-Fi fails</td>
+<td>SW</td>
+<td>P1</td>
+<td>I-04</td>
+<td>⬜</td>
+<td>Alert still speaks offline</td>
+<td></td>
+</tr>
+<tr>
+<td>R-04</td>
+<td>5 consecutive clean E2E runs</td>
+<td>All</td>
+<td>P0</td>
+<td>R-01, R-02</td>
+<td>⬜</td>
+<td>5/5 pass</td>
+<td></td>
+</tr>
+<tr>
+<td>R-05</td>
+<td><strong>Freeze core</strong>, tag release in git</td>
+<td>All</td>
+<td>P0</td>
+<td>R-04</td>
+<td>⬜</td>
+<td>Only bug fixes after this</td>
+<td><strong>M6</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>Phase 5 — Buffer (Hour 18–22) · Reserved</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Pri</th>
+<th>Needs</th>
+<th>Status</th>
+<th>Done when</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>B-01</td>
+<td>Slack for overruns, then Should-builds (history chart, alert list)</td>
+<td>All</td>
+<td>P1</td>
+<td>—</td>
+<td>⬜</td>
+<td>Nothing core still broken</td>
+<td>Demo prep is separate</td>
+</tr>
+</tbody>
+</table>
+<h3>Optional (only after M5)</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Task</th>
+<th>Owner</th>
+<th>Pri</th>
+<th>Needs</th>
+<th>Status</th>
+<th>Done when</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C-01</td>
+<td>Rehab mode, one exercise</td>
+<td>AI+SW</td>
+<td>P2</td>
+<td>M5</td>
+<td>⬜</td>
+<td>Voice coaches one set</td>
+<td>Default ⚪</td>
+</tr>
+<tr>
+<td>C-02</td>
+<td>Beat-irregularity / HRV flag</td>
+<td>AI</td>
+<td>P2</td>
+<td>A-03</td>
+<td>⬜</td>
+<td>Flag appears on irregular clip</td>
+<td></td>
+</tr>
+<tr>
+<td>C-03</td>
+<td>Risk tier from FinchNode conditions</td>
+<td>AI</td>
+<td>P2</td>
+<td>S-05</td>
+<td>⬜</td>
+<td>Tier shown on card</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>8. Dependencies</h2>
+<pre class="mermaid">flowchart TD
+  S01[&#34;S-01 Repo + contracts&#34;] --&gt; H01[&#34;H-01 Parts&#34;]
+  S01 --&gt; A01[&#34;A-01 AI env&#34;]
+  S01 --&gt; S02[&#34;S-02 Backend&#34;]
+  H01 --&gt; H04[&#34;H-02..04 Stream&#34;] --&gt; H05[&#34;H-05 Mount&#34;] --&gt; H06[&#34;H-06 Recordings&#34;]
+  A01 --&gt; A02[&#34;A-02 Replay&#34;] --&gt; A36[&#34;A-03..06 Processing&#34;]
+  A36 --&gt; A78[&#34;A-07..08 Decision&#34;]
+  S02 --&gt; S48[&#34;S-04..08 Ingest, FinchNode, UI, voice&#34;]
+  A02 -.-&gt;|&#34;unblocks SW&#34;| S48
+  H04 -.-&gt;|&#34;first real data&#34;| A36
+  A36 --&gt; I1[&#34;I-01..02 Integration&#34;]
+  S48 --&gt; I1
+  I1 --&gt; I3[&#34;I-03..04 Alert to voice + UI&#34;]
+  A78 --&gt; I3
+  I3 --&gt; E1[&#34;E-01 Replay E2E&#34;] --&gt; E2[&#34;E-02 Live E2E&#34;] --&gt; R[&#34;R-01..05 Reliability + freeze&#34;]
+  H06 --&gt; E2
+</pre>
+<p><strong>Parallel at Hour 1–5:</strong> all three tracks are independent. The only cross-links are dotted: replay data (AI → SW) and first real recording (HW → AI).</p>
+<hr>
+<h2>9. Milestones</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Milestone</th>
+<th>Target</th>
+<th>Done when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M1</td>
+<td>Each component works alone</td>
+<td>Hr 5</td>
+<td>H-04, A-06, S-04/S-06/S-07 all 🟢</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>Hardware gives usable data</td>
+<td>Hr 4</td>
+<td>Captured file shows clear pulse; H-06 started</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>AI processes real input</td>
+<td>Hr 7</td>
+<td>Real recording → plausible HR + activity + quality</td>
+</tr>
+<tr>
+<td>M4</td>
+<td>Software receives AI output</td>
+<td>Hr 8</td>
+<td>Dashboard shows live Readings</td>
+</tr>
+<tr>
+<td>M5</td>
+<td>End-to-end works</td>
+<td>Hr 12</td>
+<td>Live glasses → alert → voice + card → recovery</td>
+</tr>
+<tr>
+<td>M6</td>
+<td>Core frozen</td>
+<td>Hr 18</td>
+<td>5/5 clean runs, git tag</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>10. 24-Hour Timeline</h2>
+<table>
+<thead>
+<tr>
+<th>Hours</th>
+<th>Focus</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0–1</strong></td>
+<td>Setup, agree contracts, get keys</td>
+<td>Everyone present; no coding in isolation yet</td>
+</tr>
+<tr>
+<td><strong>1–5</strong></td>
+<td>Parallel build (Phase 1)</td>
+<td><strong>Hr 2:</strong> replay generator exists. <strong>Hr 3–4:</strong> first real PPG</td>
+</tr>
+<tr>
+<td><strong>5–9</strong></td>
+<td>First integration (Phase 2)</td>
+<td>Use replay first; swap in glasses when stable</td>
+</tr>
+<tr>
+<td><strong>9–13</strong></td>
+<td>End-to-end (Phase 3)</td>
+<td>Aim to hit M5 by Hr 12 — earlier is better</td>
+</tr>
+<tr>
+<td><strong>13–18</strong></td>
+<td>Reliability, 5 clean runs, freeze</td>
+<td>Sleep in shifts (3–4 h each), always 2 awake</td>
+</tr>
+<tr>
+<td><strong>18–22</strong></td>
+<td>Buffer; Should-builds only</td>
+<td>Core is frozen. Demo prep happens in parallel (separate doc)</td>
+</tr>
+<tr>
+<td><strong>22–24</strong></td>
+<td>Final checks, no new code</td>
+<td>Re-run E2E once; keep replay mode ready</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>11. If Everything Goes Wrong</h2>
+<p><em>Rule: at Hour 18 (or with 4–6 h left) with half the system broken, cut to this.</em></p>
+<p><strong>Keep (the core idea):</strong> a data stream (replay or finger-on-sensor) → HR + activity + quality → baseline → FinchNode context → decision with a plain-English reason → voice + dashboard card → recovery.</p>
+<table>
+<thead>
+<tr>
+<th>Cut, in this order</th>
+<th>Replace with</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Everything in Optional + Should</td>
+<td>—</td>
+</tr>
+<tr>
+<td>2. Live glasses placement</td>
+<td>Sensor on finger/wrist, glasses just mounted for show; or recorded real data via replay</td>
+</tr>
+<tr>
+<td>3. LLM reasoning</td>
+<td>Templated reason strings from rules (keep context fields in text)</td>
+</tr>
+<tr>
+<td>4. Postgres/Tiger Data</td>
+<td>SQLite or in-memory</td>
+</tr>
+<tr>
+<td>5. FinchNode live call</td>
+<td>Cached/hardcoded patient JSON (keep FinchNode if it ever worked)</td>
+</tr>
+<tr>
+<td>6. Live ElevenLabs</td>
+<td>Pre-generated audio clips</td>
+</tr>
+<tr>
+<td><strong>Never cut</strong></td>
+<td>Activity-aware + baseline-aware decision, voice + &quot;why&quot; card, recovery to normal</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>12. Testing</h2>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Test</th>
+<th>Pass</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Component</strong></td>
+<td>HW: 5 min stream, no gaps</td>
+<td>≥99% samples valid</td>
+</tr>
+<tr>
+<td></td>
+<td>AI: HR vs reference (phone/finger) on 3 recordings</td>
+<td>within ~5 bpm</td>
+</tr>
+<tr>
+<td></td>
+<td>AI: rest/moving/elevated scenarios → expected level</td>
+<td>3/3</td>
+</tr>
+<tr>
+<td></td>
+<td>SW: POST fake Reading → DB → dashboard</td>
+<td>appears &lt; 2 s</td>
+</tr>
+<tr>
+<td></td>
+<td>Voice: ElevenLabs line plays</td>
+<td>audible</td>
+</tr>
+<tr>
+<td><strong>Integration</strong></td>
+<td>Replay → Readings → backend → dashboard</td>
+<td>live updates</td>
+</tr>
+<tr>
+<td></td>
+<td>Elevated replay → Alert → voice + card</td>
+<td>both fire</td>
+</tr>
+<tr>
+<td><strong>End-to-end</strong></td>
+<td>Real person: rest → exertion → sit → alert → recover → normal</td>
+<td>full loop, 5×</td>
+</tr>
+<tr>
+<td><strong>Failure</strong></td>
+<td>Bad/no pulse signal</td>
+<td>no alert; dashboard says &quot;poor signal&quot;</td>
+</tr>
+<tr>
+<td></td>
+<td>Glasses disconnect</td>
+<td>dashboard shows &quot;sensor offline&quot;; replay still works</td>
+</tr>
+<tr>
+<td></td>
+<td>AI unsure (low confidence)</td>
+<td>level <code>monitor</code>, not <code>notify</code></td>
+</tr>
+<tr>
+<td></td>
+<td>Missing patient/FinchNode data</td>
+<td>uses cached patient; flagged in UI</td>
+</tr>
+<tr>
+<td></td>
+<td>Backend/ElevenLabs/Wi-Fi down</td>
+<td>fallback audio plays; alert still shows</td>
+</tr>
+<tr>
+<td></td>
+<td>Weird input (NaN, huge values, duplicate timestamps)</td>
+<td>dropped, no crash</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>13. Open Decisions &amp; Blockers</h2>
+<p><strong>Current blockers:</strong> None.</p>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Decision / uncertainty</th>
+<th>Proposed default (<strong>PLAN</strong>)</th>
+<th>Owner</th>
+<th>Needed by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>D-01</td>
+<td>Initial user</td>
+<td>Older adult with established CVD</td>
+<td>All</td>
+<td>Hr 1</td>
+</tr>
+<tr>
+<td>D-02</td>
+<td>Clinical scenario</td>
+<td>General monitoring: elevated HR at rest vs baseline</td>
+<td>All</td>
+<td>Hr 1</td>
+</tr>
+<tr>
+<td>D-03</td>
+<td>Rehab in MVP?</td>
+<td>No — Optional only</td>
+<td>All</td>
+<td>Hr 1</td>
+</tr>
+<tr>
+<td>D-04</td>
+<td>Sensor set</td>
+<td>PPG + IMU only; no SpO₂/resp</td>
+<td>HW</td>
+<td>Hr 1</td>
+</tr>
+<tr>
+<td>D-05</td>
+<td>What counts as abnormal</td>
+<td>Quality OK + resting + deviation ≥ trigger sustained ≥ persist_s</td>
+<td>AI</td>
+<td>Hr 4</td>
+</tr>
+<tr>
+<td>D-06</td>
+<td>Raw vs preprocessed from MCU</td>
+<td>Raw samples; all processing on laptop</td>
+<td>HW+AI</td>
+<td>Hr 1</td>
+</tr>
+<tr>
+<td>D-07</td>
+<td>Which FinchNode fields matter</td>
+<td>Conditions, meds, age until we see the API</td>
+<td>SW</td>
+<td>Hr 3</td>
+</tr>
+<tr>
+<td>D-08</td>
+<td>PPG part + sensor placement on glasses</td>
+<td>Whatever kit we have; test temple &amp; nose bridge</td>
+<td>HW</td>
+<td>Hr 4</td>
+</tr>
+<tr>
+<td>D-09</td>
+<td>MCU → laptop link</td>
+<td>USB serial (BLE only if free time)</td>
+<td>HW</td>
+<td>Hr 1</td>
+</tr>
+<tr>
+<td>D-10</td>
+<td>Audio device</td>
+<td>Laptop/phone speaker; AirPods if easy</td>
+<td>SW</td>
+<td>Hr 12</td>
+</tr>
+<tr>
+<td>D-11</td>
+<td>Live volunteer event vs replay as main path</td>
+<td>Live with replay as fallback</td>
+<td>All</td>
+<td>Hr 9</td>
+</tr>
+<tr>
+<td>D-12</td>
+<td>What the live abnormal event is</td>
+<td>Light exertion, then sit still; HR stays up</td>
+<td>AI+HW</td>
+<td>Hr 5</td>
+</tr>
+<tr>
+<td>D-13</td>
+<td>Escalation behavior</td>
+<td>&quot;escalate&quot; = phone message to contact clinician; nothing sent automatically</td>
+<td>All</td>
+<td>Hr 8</td>
+</tr>
+<tr>
+<td>D-14</td>
+<td>Risk model</td>
+<td>Skip; tier from FinchNode conditions</td>
+<td>AI</td>
+<td>Hr 8</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Risks that could break the MVP</strong></p>
+<table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Why it matters</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PPG at the temple is noisy</td>
+<td>No clean HR → no demo</td>
+<td>Test placement early (H-05); finger fallback; replay</td>
+</tr>
+<tr>
+<td>FinchNode access/fields unknown</td>
+<td>No clinical context</td>
+<td>Cached patient JSON</td>
+</tr>
+<tr>
+<td>Wi-Fi / API latency</td>
+<td>Voice or LLM delays</td>
+<td>Pre-generated audio, cached LLM results</td>
+</tr>
+<tr>
+<td>Elevated HR hard to produce on cue</td>
+<td>Unreliable event</td>
+<td>Controlled exertion script + replay</td>
+</tr>
+<tr>
+<td>Interface drift between roles</td>
+<td>Wasted integration time</td>
+<td>Contracts frozen; changes announced</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Blocker log:</strong> <em>(none yet)</em></p>
+
+
+<!--claude-mermaid-runtime-begin:3477-->
+<style>.mermaid-diagram{margin-block:4px}.mermaid-diagram svg{display:block;margin:0 auto;max-width:100%;height:auto}</style>
+<script src="/_runtime/mermaid-11.16.1.min.js"></script>
+<script>(function(){
+var CFG={"palettes":{"light":{"surface":"#f4efe4","text":"#42392e","line":"#8a7f6d","border":"#7a6c52","bg":"#fffdf8"},"dark":{"surface":"#262b34","text":"#f2f3f5","line":"#a8adb8","border":"#9aa4b8","bg":"#1f232b"}}};
+if(typeof mermaid==='undefined')return;
+var pres=Array.prototype.slice.call(document.querySelectorAll('pre.mermaid')).filter(function(p){if(p.hasAttribute('data-claude-mermaid-claimed'))return false;p.setAttribute('data-claude-mermaid-claimed','1');return true;});
+if(!pres.length)return;
+var mq=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+var root=document.documentElement;
+var items=pres.map(function(pre){
+var mount=document.createElement('div');mount.className='mermaid-diagram';
+return {pre:pre,mount:mount,src:pre.textContent||''};
+});
+var seq=0;
+var renderGen=0;
+var lastKey='';
+function pageBg(fallback){
+var els=[document.body,document.documentElement];
+for(var i=0;i<els.length;i++){
+var c=els[i]&&getComputedStyle(els[i]).backgroundColor;
+if(c&&c!=='transparent'&&c!=='rgba(0, 0, 0, 0)')return c;
+}
+return fallback;
+}
+function render(){
+var theme=root.getAttribute('data-theme');
+var dark=theme==='dark'||(!!(mq&&mq.matches)&&theme!=='light');
+var pal=dark?CFG.palettes.dark:CFG.palettes.light;
+var bg=pageBg(pal.bg);
+var key=(dark?'d':'l')+'|'+bg;
+if(key===lastKey)return;
+lastKey=key;
+var gen=++renderGen;
+var font=getComputedStyle(document.body).fontFamily||'sans-serif';
+var nat={useMaxWidth:false};
+mermaid.initialize({
+startOnLoad:false,securityLevel:'strict',theme:'base',
+flowchart:nat,sequence:nat,er:nat,state:nat,class:nat,pie:nat,
+gantt:nat,journey:nat,timeline:nat,gitGraph:nat,mindmap:nat,xyChart:nat,
+quadrantChart:nat,sankey:nat,c4:nat,requirement:nat,block:nat,
+packet:nat,kanban:nat,architecture:nat,radar:nat,
+themeVariables:{background:bg,mainBkg:pal.surface,primaryColor:pal.surface,
+primaryTextColor:pal.text,lineColor:pal.line,primaryBorderColor:pal.border,
+nodeBorder:pal.border,clusterBorder:pal.border,edgeLabelBackground:bg,
+clusterBkg:'rgba(127,127,127,0.07)',titleColor:pal.text,
+darkMode:dark,rowOdd:bg,rowEven:'rgba(127,127,127,0.07)',
+attributeBackgroundColorOdd:bg,attributeBackgroundColorEven:'rgba(127,127,127,0.07)',
+fontSize:'16px',fontFamily:font},
+themeCSS:'.node rect, .node circle, .node polygon, .node path, .cluster rect { stroke-width: 2px; }'
+});
+items.forEach(function(it){
+var id='claude-mermaid-'+seq++;
+mermaid.render(id,it.src).then(function(r){
+if(gen!==renderGen)return;
+var prev=it.pre.previousElementSibling;
+if(prev&&prev.className==='mermaid-diagram'&&prev!==it.mount)return;
+it.mount.innerHTML=r.svg;
+if(!it.mount.parentNode)it.pre.parentNode.insertBefore(it.mount,it.pre);
+it.pre.style.display='none';
+},function(){
+var scratch=document.getElementById(id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+scratch=document.getElementById('d'+id);
+if(scratch)scratch.parentNode.removeChild(scratch);
+if(gen!==renderGen)return;
+if(it.mount.parentNode)it.mount.parentNode.removeChild(it.mount);
+it.pre.style.display='';
+});
+});
+}
+render();
+if(mq&&mq.addEventListener)mq.addEventListener('change',render);
+if(typeof MutationObserver!=='undefined')new MutationObserver(render).observe(root,{attributes:true,attributeFilter:['data-theme']});
+})();</script>
+<!--claude-mermaid-runtime-end-->
+</body></html>
