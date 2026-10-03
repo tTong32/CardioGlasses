@@ -7,3 +7,7 @@ numpy
 scipy
 pyserial
 websockets
+matplotlib
+pandas
+anthropic
+pytest
