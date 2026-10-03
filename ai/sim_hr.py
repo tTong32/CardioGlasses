@@ -65,9 +65,9 @@ def simulate(scenario: str, seed: int = 42) -> list[tuple[int, Optional[float], 
             data.append((t_ms, add_noise(hr), "moving"))
             t_ms += 2000
 
-        # Recovery phase
+        # Recovery phase (310s to ensure MAX_EPISODE_S is hit)
         hr0 = 105
-        for i in range(90):  # 180 seconds / 2s
+        for i in range(155):  # 310 seconds / 2s
             t_recovery = i * 2
             hr = recovery_hr(t_recovery, baseline, hr0, tau_fast)
             data.append((t_ms, add_noise(hr), "resting"))
@@ -89,9 +89,9 @@ def simulate(scenario: str, seed: int = 42) -> list[tuple[int, Optional[float], 
             data.append((t_ms, add_noise(hr), "moving"))
             t_ms += 2000
 
-        # Recovery
+        # Recovery (310s to ensure MAX_EPISODE_S is hit)
         hr0 = 105
-        for i in range(90):
+        for i in range(155):  # 310 seconds / 2s
             t_recovery = i * 2
             hr = recovery_hr(t_recovery, baseline, hr0, tau_slow)
             data.append((t_ms, add_noise(hr), "resting"))
@@ -167,7 +167,7 @@ def simulate(scenario: str, seed: int = 42) -> list[tuple[int, Optional[float], 
             t_ms += 2000
 
         hr0 = 105
-        for i in range(90):  # 180s recovery
+        for i in range(155):  # 310s recovery
             t_recovery = i * 2
             hr = recovery_hr(t_recovery, baseline, hr0, tau_fast)
             data.append((t_ms, add_noise(hr), "resting"))
@@ -186,7 +186,7 @@ def simulate(scenario: str, seed: int = 42) -> list[tuple[int, Optional[float], 
             t_ms += 2000
 
         hr0 = 105
-        for i in range(90):
+        for i in range(155):  # 310s recovery
             t_recovery = i * 2
             hr = recovery_hr(t_recovery, baseline, hr0, tau_slow)
             data.append((t_ms, add_noise(hr), "resting"))
