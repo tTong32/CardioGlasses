@@ -143,3 +143,17 @@ def test_csv_round_trips_through_replay(tmp_path):
     path = tmp_path / "rec.csv"
     write_csv(checker.samples, path)
     assert load_csv(path) == checker.samples
+
+
+# ---------- "Why not a smartwatch" comparison ----------
+
+def test_watch_rule_needs_ten_unbroken_minutes_above_threshold():
+    from tools.compare import watch_alert
+
+    steady = [(t, 104, "resting") for t in range(0, 900, 2)]
+    assert watch_alert(steady, 120) is None
+    assert watch_alert(steady, 100) == 600
+    broken = [(t, 104 if t != 300 else 95, "resting") for t in range(0, 1000, 2)]
+    assert watch_alert(broken, 100) == 302 + 600
+    walking = [(t, 104, "moving") for t in range(0, 900, 2)]
+    assert watch_alert(walking, 100) is None  # the watch rule only counts while inactive

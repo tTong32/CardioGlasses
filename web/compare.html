@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Why Not a Smartwatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" />
+  <style>
+    /* One slide-sized page: the claim, one chart of the same 16 minutes, and three takeaways.
+       Same tokens as the patient app; red is the heart rate, teal is CardioGlasses, grey is the watch. */
+    @font-face {
+      font-family: "CG Digits"; font-weight: 400 900; unicode-range: U+0030-0039;
+      src: local("Segoe UI"), local("SegoeUI"), local("Roboto"), local("Helvetica Neue"), local("Arial");
+    }
+    :root {
+      color-scheme: light dark;
+      --font-display: "Source Serif 4", Georgia, serif;
+      --font: "CG Digits", "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --bg: #f5f1ea; --surface: #fffdf9; --ink: #1c2422; --ink-2: #4c5753; --ink-3: #6b7570;
+      --rule: #e4ddd1; --accent: #1d5f58; --accent-soft: #e2eeeb;
+      --hr: #c0392b; --watch: #8a8f8c; --band: #ece5d8;
+      --monitor: #8a5a00; --notify: #a4461a; --escalate: #a52520;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121615; --surface: #1a201e; --ink: #ece7de; --ink-2: #b9b5ac; --ink-3: #959189;
+        --rule: #2a312e; --accent: #7fd0bf; --accent-soft: #1d2f2b;
+        --hr: #f07a6e; --watch: #8e9591; --band: #232a28;
+        --monitor: #e9b960; --notify: #f29d68; --escalate: #f4908a;
+      }
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: clamp(14px, 1.15vw + 0.4vh, 18px); line-height: 1.45; }
+    h1, h2, p { margin: 0; }
+    .page {
+      min-height: 100%; max-width: 1240px; margin: 0 auto;
+      padding-inline: 16px; padding-block: clamp(14px, 3vh, 32px);
+      display: grid; gap: clamp(10px, 2vh, 20px); grid-template-rows: auto 1fr auto auto;
+    }
+    .eyebrow { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+    h1 { font-family: var(--font-display); font-size: clamp(1.8rem, 3.2vw + 1vh, 3rem); line-height: 1.05; font-weight: 700; text-wrap: balance; margin-top: 4px; }
+    .sub { margin-top: 6px; color: var(--ink-2); max-width: 70ch; }
+
+    .chart { background: var(--surface); border-radius: 22px; padding: clamp(10px, 1.6vh, 18px) clamp(10px, 1.6vw, 20px); min-height: 0; display: flex; flex-direction: column; }
+    .chart-wrap { flex: 1; min-height: 220px; overflow-x: auto; }
+    .chart svg { display: block; width: 100%; height: 100%; min-width: 560px; font-family: var(--font); }
+    .key { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.85rem; color: var(--ink-2); margin-top: 8px; }
+    .key span { display: inline-flex; align-items: center; gap: 7px; }
+    .sw { width: 22px; height: 0; border-top: 3px solid var(--hr); }
+    .sw.watch { border-top: 2px dashed var(--watch); }
+    .sw.cg { border-top: 2px dashed var(--accent); }
+    .sw.noisy { height: 12px; border: 0; background: var(--band); }
+
+    .takeaways { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .take { background: var(--surface); border-radius: 18px; padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+    .take b { font-family: var(--font-display); font-size: clamp(1.25rem, 1.6vw + 0.6vh, 1.7rem); line-height: 1.1; color: var(--accent); }
+    .take p { color: var(--ink-2); font-size: 0.95rem; }
+    .fine { font-size: 0.78rem; color: var(--ink-3); max-width: 120ch; }
+    /* On a projector or laptop the page is exactly one screen: the chart takes what is left. */
+    @media (min-width: 900px) and (min-aspect-ratio: 4/3) {
+      body { overflow: hidden; }
+      .page { height: 100%; min-height: 0; }
+      .chart-wrap { min-height: 0; }
+      .chart svg { min-width: 0; }
+    }
+
+    /* SVG marks, all from tokens */
+    .grid { stroke: var(--rule); stroke-width: 1; }
+    .tick { fill: var(--ink-3); font-size: 12px; }
+    .hrline { fill: none; stroke: var(--hr); stroke-width: 2.4; stroke-linejoin: round; }
+    .watchline { stroke: var(--watch); stroke-width: 1.6; stroke-dasharray: 6 5; }
+    .cgline { stroke: var(--accent); stroke-width: 1.6; stroke-dasharray: 3 4; }
+    .noisy { fill: var(--band); }
+    .lane-label { fill: var(--ink); font-size: 13px; font-weight: 700; }
+    .lane-sub { fill: var(--ink-3); font-size: 11.5px; }
+    .lane { fill: var(--bg); }
+    .ev { font-size: 12px; font-weight: 700; }
+    .ev-monitor { fill: var(--monitor); } .ev-notify { fill: var(--notify); } .ev-escalate { fill: var(--escalate); } .ev-watch { fill: var(--watch); }
+    .ev-family { fill: var(--accent); }
+    .label-hr { fill: var(--hr); font-size: 12px; font-weight: 700; }
+    .label-watch { fill: var(--watch); font-size: 12px; font-weight: 700; }
+    .label-cg { fill: var(--accent); font-size: 12px; font-weight: 700; }
+    .label-noisy { fill: var(--ink-3); font-size: 11.5px; }
+    .never { fill: var(--ink-3); font-size: 12.5px; font-style: italic; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <p class="eyebrow">Same patient · same 16 minutes</p>
+      <h1>Why not just a smartwatch?</h1>
+      <p class="sub" id="sub">A 78-year-old with atrial fibrillation, on metoprolol, sits down and their heart rate climbs to about 104 and stays there.</p>
+    </header>
+
+    <section class="chart" aria-label="Heart rate over 16 minutes with when each system alerts">
+      <div class="chart-wrap"><svg id="chart" viewBox="0 0 1000 340" preserveAspectRatio="xMidYMid meet" role="img" aria-labelledby="chart-desc"><desc id="chart-desc">Heart rate rises from about 71 to 104 at minute 2 and stays there. CardioGlasses checks in within a minute; a smartwatch rule set at 120 never alerts, and at its most sensitive setting alerts about 10 minutes later.</desc></svg></div>
+      <div class="key">
+        <span><i class="sw"></i>Heart rate</span>
+        <span><i class="sw cg"></i>CardioGlasses line: 12+ above this person's usual</span>
+        <span><i class="sw watch"></i>Smartwatch alert lines (fixed)</span>
+        <span><i class="sw noisy"></i>Glasses slipped: noisy signal</span>
+      </div>
+    </section>
+
+    <section class="takeaways">
+      <div class="take"><b id="t-sooner">10 minutes sooner</b><p id="t-sooner-p">CardioGlasses asks "Are you OK?" while a fixed-threshold rule is still counting.</p></div>
+      <div class="take"><b>It knows the record</b><p>Alerts are judged against this person's usual rate, with their atrial fibrillation and metoprolol in mind, not a one-size 120.</p></div>
+      <div class="take"><b>Quiet when unsure</b><p>When the signal got noisy it said "weak signal" and waited. No guessing, no false alarm.</p></div>
+    </section>
+
+    <p class="fine" id="fine">Data: one synthetic session run through the real CardioGlasses pipeline (irregular rhythm, a noisy minute). Smartwatch rule modelled on high-heart-rate notifications: inactive and above a fixed threshold for 10 minutes (120 bpm shown; 100 bpm is the lowest setting). The watch is given a perfect heart-rate signal, so the difference is the rule, not the sensor. Wellness prototype, not a medical device.</p>
+  </main>
+
+  <script src="compare-data.js"></script>
+  <script>
+    (function () {
+      const D = window.COMPARE;
+      const svg = document.getElementById("chart");
+      if (!D) { document.getElementById("sub").textContent = "Run `python -m tools.compare` to generate the data."; return; }
+      const NS = "http://www.w3.org/2000/svg";
+      const W = 1000, X0 = 150, X1 = 980, Y0 = 16, Y1 = 196, HR_LO = 55, HR_HI = 125;
+      const LANES = [226, 264, 302];
+      const sx = (t) => X0 + (X1 - X0) * t / D.duration_s;
+      const sy = (hr) => Y1 - (Y1 - Y0) * (hr - HR_LO) / (HR_HI - HR_LO);
+      const mmss = (t) => Math.floor(t / 60) + ":" + String(Math.round(t % 60)).padStart(2, "0");
+      function el(name, attrs, text) {
+        const node = document.createElementNS(NS, name);
+        for (const k in attrs) node.setAttribute(k, attrs[k]);
+        if (text != null) node.textContent = text;
+        svg.appendChild(node);
+        return node;
+      }
+
+      // Noisy minute
+      el("rect", { class: "noisy", x: sx(D.noisy[0]), y: Y0, width: sx(D.noisy[1]) - sx(D.noisy[0]), height: Y1 - Y0 });
+      el("text", { class: "label-noisy", x: (sx(D.noisy[0]) + sx(D.noisy[1])) / 2, y: Y1 - 8, "text-anchor": "middle" }, "glasses slipped");
+      // Grid + axes
+      for (const hr of [60, 80, 100, 120]) {
+        el("line", { class: "grid", x1: X0, x2: X1, y1: sy(hr), y2: sy(hr) });
+        el("text", { class: "tick", x: X0 - 8, y: sy(hr) + 4, "text-anchor": "end" }, String(hr));
+      }
+      el("text", { class: "tick", x: X0 - 8, y: Y0 - 4, "text-anchor": "end" }, "bpm");
+      for (let m = 0; m <= D.duration_s / 60; m += 2) {
+        el("text", { class: "tick", x: sx(m * 60), y: LANES[2] + 34, "text-anchor": "middle" }, m + " min");
+      }
+      // Alert lines
+      el("line", { class: "watchline", x1: X0, x2: X1, y1: sy(120), y2: sy(120) });
+      el("text", { class: "label-watch", x: X1, y: sy(120) - 6, "text-anchor": "end" }, "Smartwatch: 120");
+      el("line", { class: "watchline", x1: X0, x2: X1, y1: sy(100), y2: sy(100) });
+      el("text", { class: "label-watch", x: X1, y: sy(100) + 16, "text-anchor": "end" }, "Smartwatch (most sensitive): 100");
+      const cgLine = D.usual + 12;
+      el("line", { class: "cgline", x1: X0, x2: X1, y1: sy(cgLine), y2: sy(cgLine) });
+      el("text", { class: "label-cg", x: sx(D.onset_s) - 8, y: sy(cgLine) - 6, "text-anchor": "end" }, "CardioGlasses: usual " + Math.round(D.usual) + " + 12");
+      // Heart rate (gaps where the glasses withheld a reading)
+      let seg = [];
+      const flush = () => { if (seg.length > 1) el("polyline", { class: "hrline", points: seg.join(" ") }); seg = []; };
+      for (const [t, hr] of D.points) { if (hr == null) flush(); else seg.push(sx(t).toFixed(1) + "," + sy(hr).toFixed(1)); }
+      flush();
+
+      // Lanes: who said what, when
+      const lanes = [
+        ["Smartwatch", "alert line 120"],
+        ["Smartwatch", "most sensitive, 100"],
+        ["CardioGlasses", "knows the record"]
+      ];
+      lanes.forEach(function (lane, i) {
+        el("rect", { class: "lane", x: X0, y: LANES[i] - 15, width: X1 - X0, height: 30, rx: 8 });
+        el("text", { class: "lane-label", x: X0 - 10, y: LANES[i] - 1, "text-anchor": "end" }, lane[0]);
+        el("text", { class: "lane-sub", x: X0 - 10, y: LANES[i] + 13, "text-anchor": "end" }, lane[1]);
+      });
+      function event(lane, t, cls, label, anchor) {
+        const y = LANES[lane];
+        el("circle", { class: cls, cx: sx(t), cy: y, r: 7 });
+        el("text", { class: "ev " + cls, x: sx(t) + (anchor === "end" ? -12 : 12), y: y + 4, "text-anchor": anchor || "start" }, label);
+      }
+      if (D.watch["120"] == null) el("text", { class: "never", x: (X0 + X1) / 2, y: LANES[0] + 4, "text-anchor": "middle" }, "no alert in 16 minutes");
+      else event(0, D.watch["120"], "ev-watch", "alert " + mmss(D.watch["120"]));
+      if (D.watch["100"] == null) el("text", { class: "never", x: (X0 + X1) / 2, y: LANES[1] + 4, "text-anchor": "middle" }, "no alert in 16 minutes");
+      else event(1, D.watch["100"], "ev-watch", "first alert " + mmss(D.watch["100"]), "end");
+      const words = { monitor: "keeping an eye", notify: "“Are you OK?”", escalate: "get help" };
+      const shown = D.alerts.filter((a) => a.level !== "normal");
+      shown.forEach(function (a, i) {
+        el("line", { class: "watchline", x1: sx(a.t), x2: sx(a.t), y1: Y0, y2: LANES[2] - 16, style: "stroke: var(--" + a.level + "); stroke-dasharray: 2 4" });
+      });
+      // Space the CardioGlasses labels: dots on the lane, labels stacked under the chart's right side.
+      shown.forEach(function (a) { el("circle", { class: "ev-" + a.level, cx: sx(a.t), cy: LANES[2], r: 7 }); });
+      const notify = shown.find((a) => a.level === "notify");
+      const firstText = shown.map((a) => words[a.level] + " " + mmss(a.t)).join("  ·  ");
+      el("text", { class: "ev ev-family", x: sx(shown.length ? shown[shown.length - 1].t : D.onset_s) + 14, y: LANES[2] + 4 }, firstText);
+
+      // Takeaway numbers from the data
+      if (notify && D.watch["100"] != null) {
+        const mins = Math.round((D.watch["100"] - notify.t) / 60);
+        document.getElementById("t-sooner").textContent = mins + " minutes sooner";
+        document.getElementById("t-sooner-p").textContent = "CardioGlasses asked “Are you OK?” at " + mmss(notify.t)
+          + ". The watch, even at its most sensitive and with a perfect sensor, first alerted at " + mmss(D.watch["100"])
+          + ". At 120 it never did.";
+      }
+    })();
+  </script>
+</body>
+</html>

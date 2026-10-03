@@ -83,6 +83,12 @@ Scenarios: `rest`, `moving`, `noisy`, `normal_recovery` (no alerts), `elevated_r
 
 The FinchNode record shapes monitoring (`ai/clinical.py`): the risk tier sets how big and how long a rise must be before an alert; atrial fibrillation in the record switches beat detection to irregular-rhythm mode (otherwise half of an AF patient's readings would count as bad signal); rate-control medication picks the recovery comparison group and informs the wording; clinic heart-rate readings give a starting "usual" until the glasses calibrate, so a high reading at switch-on isn't learned as normal. The dashboard lists these under Health record.
 
+### Caregiver safety net, guided walk, smartwatch comparison
+
+- **Safety net:** a notify/escalate alert asks the wearer "Are you OK?" on the phone (60 s, `CHECKIN_TIMEOUT_S`). No answer or "I need help" notifies the caregiver on `/caregiver` (open it on a second phone) and by iMessage through Photon when `CAREGIVER_PHONE`, `PHOTON_IMESSAGE_ADDRESS` and `PHOTON_IMESSAGE_TOKEN` are set. Install the sender once: `cd tools/imessage && npm install`.
+- **Guided walk:** the Walk button sets a heart-rate zone from the record (on metoprolol: usual + 20 to 30), speaks only when the wearer stays above it, and checks the 1-minute recovery afterwards. Rehearse with `python -m tools.demo_sim --scenario walk` (set `WALK_RECOVERY_S` lower when speeding it up).
+- **Why not a smartwatch:** `/compare.html`, one slide comparing a fixed smartwatch rule with CardioGlasses on the same 16 minutes. Regenerate the data with `python -m tools.compare`.
+
 ## Git workflow
 
 Stay on `main`. Make small commits, pull before you push, and only edit your own folder.
