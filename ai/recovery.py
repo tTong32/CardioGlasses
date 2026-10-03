@@ -11,6 +11,8 @@ import warnings
 import numpy as np
 from scipy.optimize import curve_fit
 
+from ai.clinical import RATE_CONTROL_TERMS
+
 
 # ============================================================================
 # TUNABLE CONSTANTS
@@ -37,11 +39,7 @@ MAX_EPISODE_S = 300  # maximum episode duration
 
 # Group selection
 MIN_GROUP_N = 30  # fall back to "all" group below this
-MEDS_KEYWORDS = [
-    "metoprolol", "bisoprolol", "carvedilol", "atenolol", "propranolol",
-    "nebivolol", "diltiazem", "verapamil", "digoxin", "amiodarone",
-    "ivabradine", "beta blocker"
-]
+MEDS_KEYWORDS = list(RATE_CONTROL_TERMS)  # shared with ai.clinical so the lists can't drift
 
 # ============================================================================
 # DATA STRUCTURES
@@ -229,6 +227,11 @@ class RecoveryModel:
 
         with open(cutoffs_file) as f:
             return json.load(f)
+
+    def set_medications(self, medications: Optional[list[str]]) -> None:
+        """Update the medication list (e.g. after a record refresh) and reselect the group."""
+        self._medications = medications or []
+        self._group = self._select_group()
 
     def _select_group(self) -> str:
         """Select the appropriate cutoff group based on medications."""

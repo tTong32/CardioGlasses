@@ -385,3 +385,23 @@ def test_out_of_order_samples_are_ignored():
     samples = list(scenario("rest")[:1000])
     shuffled = samples[:500] + [samples[100]] + samples[500:]
     assert len(list(Pipeline(CONTEXT).run(shuffled))) == len(list(Pipeline(CONTEXT).run(samples)))
+
+
+def test_record_update_mid_run_keeps_learning_and_switches_rules():
+    pipeline = Pipeline(SINUS)
+    samples = scenario("af_elevated_rest")
+    half = len(samples) // 3
+    list(pipeline.run(samples[:half]))
+    learned = pipeline.baseline.baseline_hr
+    assert learned is not None and not pipeline.irregular_rhythm
+    pipeline.update_context(CONTEXT)  # the record now lists atrial fibrillation
+    assert pipeline.irregular_rhythm and pipeline.min_std == 6.0
+    assert pipeline.baseline.baseline_hr == learned  # nothing relearned
+    def trusted(steps):
+        return sum(s.reading.signal_status == "ok" for s in steps) / len(steps)
+
+    switched = trusted(list(pipeline.run(samples[half:])))
+    never = Pipeline(SINUS)
+    list(never.run(samples[:half]))
+    unswitched = trusted(list(never.run(samples[half:])))
+    assert switched > 0.8 and switched > unswitched + 0.25

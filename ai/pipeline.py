@@ -42,6 +42,7 @@ MIN_WINDOW_S = 6.0  # no Readings until the window holds this much data
 # A low-quality window is no evidence either way: persistence holds through it and only
 # resets after this long without a trusted reading.
 EVIDENCE_HOLD_S = 10.0
+CONTEXT_REFRESH_S = 30.0  # how often a live run re-reads the patient record from the backend
 
 log = logging.getLogger(__name__)
 
@@ -73,6 +74,16 @@ class Pipeline:
         self._persist_s = 0.0
         self._untrusted_since_ms: Optional[int] = None
         self._shown_recovery = RecoveryOutput()
+
+    def update_context(self, context: PatientContext) -> None:
+        """Apply a refreshed patient record without losing what has been learned so far
+        (baseline, recovery episode, alert level and its cooldown all carry over)."""
+        self.context = context
+        self.engine.context = context
+        self.irregular_rhythm = irregular_rhythm_expected(context)
+        self.min_std = baseline_min_std(context)
+        self.clinic_hr = context.clinic_resting_hr
+        self.recovery.set_medications(context.medications)
 
     def push(self, sample: Sample) -> Optional[Step]:
         """Add one sample. Returns a Step every STEP_S of sample time, else None."""
@@ -270,11 +281,21 @@ def main() -> None:
     pipeline = Pipeline(context, explainer)
     t0 = samples[0].t if samples else 0
     paced = iter_samples(samples, speed=args.speed) if not args.dry_run else iter(samples)
+    last_check = time.monotonic()
     try:
         for step in pipeline.run(paced):
             print(describe(step, (step.reading.t - t0) / 1000.0), flush=True)
             if args.dry_run:
                 continue
+            if time.monotonic() - last_check >= CONTEXT_REFRESH_S:
+                last_check = time.monotonic()
+                try:
+                    fresh = fetch_context(args.base_url)
+                except requests.RequestException:
+                    fresh = None  # keep the record we have
+                if fresh is not None and fresh != pipeline.context:
+                    pipeline.update_context(fresh)
+                    print(f"        (patient record updated: {fresh.patient_id}, {fresh.risk_tier} risk)", flush=True)
             reading, alert = step.reading, step.alert
             if not args.keep_time:  # wall-clock time so the dashboard's freshness checks work
                 now = int(time.time() * 1000)

@@ -19,6 +19,7 @@ from dotenv import load_dotenv
 from pydantic import BaseModel
 
 import ai.config as cfg
+from ai.clinical import rate_control_medications
 from ai.contracts import Level, PatientContext, Reading
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -51,7 +52,6 @@ VOICE_ACTIONS = {
     "escalate": "Please sit down and contact your care team.",
 }
 CARDIAC_TERMS = ("atrial fibrillation", "heart failure", "coronary", "arrhythmia", "cardiomyopathy", "hypertension")
-RATE_MEDS = ("metoprolol", "bisoprolol", "carvedilol", "atenolol", "propranolol", "nebivolol", "diltiazem", "verapamil", "digoxin")
 GEMINI_DEADLINE_MS = 10_000  # the API's minimum allowed deadline
 FORBIDDEN = re.compile(r"heart attack|cardiac arrest|stroke|diagnos|emergency|911|you have (a|an) ", re.I)
 
@@ -82,7 +82,7 @@ class Explanation:
 
 def relevant_history(context: PatientContext) -> tuple[list[str], list[str]]:
     conditions = [c for c in context.conditions if any(t in c.lower() for t in CARDIAC_TERMS)]
-    meds = [m for m in context.medications if any(t in m.lower() for t in RATE_MEDS)]
+    meds = rate_control_medications(context)
     return conditions[:2], meds[:1]
 
 

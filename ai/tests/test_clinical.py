@@ -68,3 +68,18 @@ def test_recovery_start_uses_first_clean_hr_when_stop_is_unreadable():
         model.update(t, 68 + 42 * math.exp(-(i * 2 + 2) / 30), "resting", 68.0, 2.0)
         t += 2000
     assert model._hr0 is not None and model._hr0 > 100
+
+
+def test_one_medication_list():
+    from ai import explainer, recovery
+
+    assert recovery.MEDS_KEYWORDS == list(clinical.RATE_CONTROL_TERMS)
+    record = patient(["Heart failure"], ["amiodarone 200 MG", "metformin"])
+    assert explainer.relevant_history(record)[1] == ["amiodarone 200 MG"]  # was missing from the wording list
+
+
+def test_recovery_group_follows_medication_updates():
+    model = RecoveryModel(medications=["metformin"])
+    before = model._group
+    model.set_medications(["24 HR metoprolol succinate 50 MG"])
+    assert model._group == "meds" and before != "meds"

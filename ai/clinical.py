@@ -30,8 +30,8 @@ IRREGULAR_BASELINE_MIN_STD = 6.0
 PROVISIONAL_MIN_STD = 8.0
 RATE_CONTROL_TERMS = (
     "metoprolol", "bisoprolol", "carvedilol", "atenolol", "propranolol", "nebivolol",
-    "diltiazem", "verapamil", "digoxin", "amiodarone", "ivabradine",
-)
+    "diltiazem", "verapamil", "digoxin", "amiodarone", "ivabradine", "beta blocker",
+)  # the one list of heart-rate-lowering medications (recovery and wording use it too)
 
 
 def tuned_config(base: Config, risk_tier: str) -> Config:
