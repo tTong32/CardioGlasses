@@ -313,6 +313,19 @@ SCENARIOS = {
         jitter_percent=18.0,
     ),
 
+    # The glasses go on while HR is already high: without a reference, this would be learned
+    # as the usual rate.
+    "elevated_from_start": Scenario(
+        name="elevated_from_start",
+        duration_s=300,
+        hr_fn=_piecewise(
+            (150, _constant_hr(104)),
+            (180, _linear_ramp(150, 180, 104, 72)),
+            (300, _constant_hr(72)),
+        ),
+        seed=9,
+    ),
+
     "noisy": Scenario(
         name="noisy",
         duration_s=120,

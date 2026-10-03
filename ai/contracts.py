@@ -64,6 +64,9 @@ class PatientContext(BaseModel):
     medications: list[str]
     risk_tier: str
     config: Config
+    # Median of recent clinic heart-rate readings (bpm), or null. Optional so older senders
+    # still validate; the backend always emits it. A starting point before calibration.
+    clinic_resting_hr: Optional[float] = None
 
 
 class Alert(BaseModel):

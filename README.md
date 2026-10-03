@@ -81,7 +81,7 @@ python -m ai.pipeline data/rec_rest.csv --speed 5                 # a recording
 
 Scenarios: `rest`, `moving`, `noisy`, `normal_recovery` (no alerts), `elevated_rest` and `af_elevated_rest` (monitor -> notify -> escalate -> normal), `slow_recovery` and `calibration_then_slow` (notify, then escalate for a regular-rhythm patient). Add `--no-llm` for templated wording.
 
-The FinchNode record shapes monitoring (`ai/clinical.py`): the risk tier sets how big and how long a rise must be before an alert; atrial fibrillation in the record switches beat detection to irregular-rhythm mode (otherwise half of an AF patient's readings would count as bad signal); rate-control medication picks the recovery comparison group and informs the wording. The dashboard lists these under Health record.
+The FinchNode record shapes monitoring (`ai/clinical.py`): the risk tier sets how big and how long a rise must be before an alert; atrial fibrillation in the record switches beat detection to irregular-rhythm mode (otherwise half of an AF patient's readings would count as bad signal); rate-control medication picks the recovery comparison group and informs the wording; clinic heart-rate readings give a starting "usual" until the glasses calibrate, so a high reading at switch-on isn't learned as normal. The dashboard lists these under Health record.
 
 ## Git workflow
 

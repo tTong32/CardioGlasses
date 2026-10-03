@@ -316,6 +316,23 @@ def test_scenario_alerts_sinus_patient(name, expected):
     assert alert_levels(name, SINUS) == expected
 
 
+def test_clinic_hr_catches_a_high_start():
+    with_clinic = SINUS.model_copy(update={"clinic_resting_hr": 76.0})
+    assert alert_levels("elevated_from_start", with_clinic)[:2] == ["monitor", "notify"]
+    assert alert_levels("elevated_from_start", with_clinic)[-1] == "normal"
+    # Without it, the high start is learned as the usual rate and nothing is said.
+    assert alert_levels("elevated_from_start", SINUS) == []
+    first_usual = next(s.reading.baseline_hr for s in run("elevated_from_start", SINUS) if s.reading.baseline_hr)
+    assert first_usual > 95
+
+
+def test_clinic_hr_hands_over_to_the_measured_usual():
+    steps = run("rest", SINUS.model_copy(update={"clinic_resting_hr": 76.0}))
+    assert steps[0].reading.baseline_hr == 76.0
+    assert abs(steps[-1].reading.baseline_hr - 68) < 2
+    assert all(s.alert is None for s in steps)
+
+
 def test_af_record_keeps_an_af_rhythm_trusted():
     def trusted(steps):
         return sum(s.reading.signal_status == "ok" for s in steps) / len(steps)

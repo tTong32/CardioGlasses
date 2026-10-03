@@ -50,6 +50,12 @@ def test_effects_describe_the_record():
     assert clinical.effects(patient(["Asthma"]))[0].startswith("High risk: alerts if your resting heart rate stays 8+ bpm")
 
 
+def test_effects_mention_the_clinic_starting_point():
+    with_hr = patient(["Heart failure"]).model_copy(update={"clinic_resting_hr": 73.5})
+    assert any(line.startswith("Clinic heart rate 74:") for line in clinical.effects(with_hr))
+    assert not any("Clinic" in line for line in clinical.effects(patient(["Heart failure"])))
+
+
 def test_recovery_start_uses_first_clean_hr_when_stop_is_unreadable():
     model = RecoveryModel(medications=[])
     t = 0

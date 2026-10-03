@@ -25,6 +25,9 @@ IRREGULAR_RHYTHM_TERMS = ("atrial fibrillation", "atrial flutter", "arrhythmia",
 # With an irregular rhythm, window-to-window HR swings ~4-6 bpm on its own, so the
 # baseline spread gets a wider floor; otherwise ordinary AF variation reads as deviation.
 IRREGULAR_BASELINE_MIN_STD = 6.0
+# Clinic readings aren't home resting conditions, so until the glasses measure the real
+# usual rate, the clinic value only counts with a wider spread floor (a bigger rise).
+PROVISIONAL_MIN_STD = 8.0
 RATE_CONTROL_TERMS = (
     "metoprolol", "bisoprolol", "carvedilol", "atenolol", "propranolol", "nebivolol",
     "diltiazem", "verapamil", "digoxin", "amiodarone", "ivabradine",
@@ -66,6 +69,11 @@ def effects(context: PatientContext) -> list[str]:
     rhythm = [c for c in context.conditions if any(t in c.lower() for t in IRREGULAR_RHYTHM_TERMS)]
     if rhythm:
         out.append(f"{rhythm[0]}: an irregular beat is expected, so it isn't treated as a bad signal.")
+    if context.clinic_resting_hr is not None:
+        out.append(
+            f"Clinic heart rate {context.clinic_resting_hr:.0f}: used as your starting point until the "
+            "glasses learn your usual rate (about a minute of sitting still)."
+        )
     meds = rate_control_medications(context)
     if meds:
         out.append(f"On {_short_med(meds[0])}: recovery after activity is compared with people on similar medication.")

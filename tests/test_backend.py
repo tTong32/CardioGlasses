@@ -53,6 +53,16 @@ def test_maps_finchnode_record_to_contract_d():
     assert context.config == CONFIG
 
 
+def test_clinic_resting_hr_is_median_of_recent_heart_rates():
+    vitals = [{"name": "Heart rate", "value": str(v), "date": f"2024-0{i + 1}-01"} for i, v in enumerate([71, 77, 84, 68, 65])]
+    vitals += [{"name": "Body weight", "value": "70", "date": "2024-01-01"}, {"name": "Heart rate", "value": "n/a", "date": "x"}]
+    assert finchnode.clinic_resting_hr(vitals) == 71.0
+    assert finchnode.clinic_resting_hr([]) is None
+    record = {**RECORD, "data": {**RECORD["data"], "vitals": vitals}}
+    assert finchnode.to_patient_context(record, CONFIG, today=date(2026, 10, 3)).clinic_resting_hr == 71.0
+    assert finchnode.to_patient_context(RECORD, CONFIG, today=date(2026, 10, 3)).clinic_resting_hr is None
+
+
 def test_age_counts_birthday_not_yet_reached():
     assert finchnode.age_from_birth_date("1948-12-31", today=date(2026, 10, 3)) == 77
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 from datetime import date
+from statistics import median
 
 import requests
 
@@ -54,6 +55,24 @@ def _active_names(items: list[dict]) -> list[str]:
     return names
 
 
+def clinic_resting_hr(vitals: list[dict], last_n: int = 10) -> float | None:
+    """Median of the most recent clinic heart-rate readings, or None if there are none."""
+    readings = []
+    for v in vitals or []:
+        if (v.get("name") or "").strip().lower() != "heart rate":
+            continue
+        try:
+            bpm = float(v.get("value"))
+        except (TypeError, ValueError):
+            continue
+        if 30 <= bpm <= 200:
+            readings.append((v.get("date") or "", bpm))
+    if not readings:
+        return None
+    recent = sorted(readings)[-last_n:]
+    return round(float(median(bpm for _, bpm in recent)), 1)
+
+
 def to_patient_context(record: dict, config: Config, today: date | None = None) -> PatientContext:
     """Map a FinchNode `/users/{subject}/records` response to Contract D."""
     data = record.get("data") or {}
@@ -70,6 +89,7 @@ def to_patient_context(record: dict, config: Config, today: date | None = None) 
         medications=_active_names(data.get("medications")),
         risk_tier=risk_tier(age, conditions),
         config=config,
+        clinic_resting_hr=clinic_resting_hr(data.get("vitals")),
     )
 
 
@@ -80,7 +100,7 @@ def fetch_record(base_url: str, patient_id: str, api_key: str | None = None, tim
         headers["Authorization"] = f"Bearer {api_key}"
     response = requests.get(
         f"{base_url.rstrip('/')}/users/{patient_id}/records",
-        params={"categories": "demographics,conditions,medications"},
+        params={"categories": "demographics,conditions,medications,vitals"},
         headers=headers,
         timeout=timeout,
     )

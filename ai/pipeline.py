@@ -26,7 +26,7 @@ from dotenv import load_dotenv
 import ai.config as cfg
 from ai.activity import ActivityDetector
 from ai.baseline import BaselineTracker
-from ai.clinical import baseline_min_std, irregular_rhythm_expected, tuned_config
+from ai.clinical import PROVISIONAL_MIN_STD, baseline_min_std, irregular_rhythm_expected, tuned_config
 from ai.contracts import Alert, PatientContext, Reading, Sample
 from ai.decision import POST_EXERTION_GRACE_S, Context, DecisionEngine
 from ai.explainer import Explainer
@@ -64,6 +64,7 @@ class Pipeline:
         self.engine = DecisionEngine(context, explainer)
         self.irregular_rhythm = irregular_rhythm_expected(context)
         self.min_std = baseline_min_std(context)
+        self.clinic_hr = context.clinic_resting_hr
         self._next_emit_ms: Optional[int] = None
         self._last_emit_ms: Optional[int] = None
         self._last_sample_ms: Optional[int] = None
@@ -118,11 +119,15 @@ class Pipeline:
         else:
             signal_status = "ok" if trusted else "poor"
 
-        # Deviation uses the baseline as it was before this reading.
-        base_hr, base_sd = self.baseline.baseline_hr, self.baseline.baseline_std
+        # Deviation uses the baseline as it was before this reading. Until the glasses have
+        # measured one, the clinic heart rate (if any) stands in, with a wider margin.
+        base_hr, base_sd, floor = self.baseline.baseline_hr, self.baseline.baseline_std, self.min_std
+        provisional = base_hr is None and self.clinic_hr is not None
+        if provisional:
+            base_hr, base_sd, floor = self.clinic_hr, None, max(self.min_std, PROVISIONAL_MIN_STD)
         deviation = None
         if hr is not None and base_hr is not None:
-            deviation = (hr - base_hr) / max(base_sd or 0.0, self.min_std)
+            deviation = (hr - base_hr) / max(base_sd or 0.0, floor)
 
         # HR is already withheld below HR_MIN_QUALITY (where it stops being accurate), so the
         # recovery model gets it even when motion keeps quality under min_quality.
@@ -134,13 +139,16 @@ class Pipeline:
             self._shown_recovery = RecoveryOutput()
 
         # Only clean, calm, resting HR feeds the baseline, so an episode can't become "normal".
+        # Against the clinic value, "calm" means below the alert line: a high start is never
+        # learned as the usual rate.
+        calm_below = cfg_p.deviation_trigger if provisional else cfg.DEVIATION_NORMAL_THRESHOLD
         if activity == "moving":
             self.baseline.update(t, hr, "moving")
         elif (
             trusted
             and not recovering
             and not in_grace
-            and (deviation is None or deviation < cfg.DEVIATION_NORMAL_THRESHOLD)
+            and (deviation is None or deviation < calm_below)
         ):
             self.baseline.update(t, hr, "resting")
 
