@@ -1,41 +1,48 @@
 """Shared Contract A–D models. The backend imports this module.
 
-Nullable fields are `X | None` with no default: a missing key is rejected, and an
+Nullable fields are `Optional[X]` with no default: a missing key is rejected, and an
 explicit null is stored. Serialization keeps those nulls (they are not omitted).
 """
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
 Level = Literal["normal", "monitor", "notify", "escalate"]
 Activity = Literal["resting", "moving"]
+SignalStatus = Literal["ok", "poor", "offline"]
+RecoveryVerdict = Literal["normal", "slow", "very_slow"]
 
 
 class Sample(BaseModel):
     """Contract A. One PPG + IMU sample."""
 
     t: int
-    ppg: int | None
-    ax: float | None
-    ay: float | None
-    az: float | None
-    gx: float | None
-    gy: float | None
-    gz: float | None
+    ppg: Optional[int]
+    ax: Optional[float]
+    ay: Optional[float]
+    az: Optional[float]
+    gx: Optional[float]
+    gy: Optional[float]
+    gz: Optional[float]
 
 
 class Reading(BaseModel):
     """Contract B. A ~2 s summary posted to the backend."""
 
     t: int
-    hr: float | None
-    ibi_ms: list[int] | None
-    activity: Activity | None
-    quality: float | None
-    baseline_hr: float | None
-    deviation: float | None
-    persist_s: float | None
+    hr: Optional[float]
+    ibi_ms: Optional[list[int]]
+    activity: Optional[Activity]
+    quality: Optional[float]
+    baseline_hr: Optional[float]
+    deviation: Optional[float]
+    persist_s: Optional[float]
+    recovery_tau_s: Optional[float]
+    hr_drop_60s: Optional[float]
+    recovery_ratio: Optional[float]
+    recovery_verdict: Optional[RecoveryVerdict]
+    signal_status: Optional[SignalStatus]
 
 
 class Config(BaseModel):
@@ -63,9 +70,9 @@ class Alert(BaseModel):
 
     t: int
     level: Level
-    confidence: float | None
-    headline: str | None
-    reason: str | None
-    voice_text: str | None
-    next_step: str | None
+    confidence: Optional[float]
+    headline: Optional[str]
+    reason: Optional[str]
+    voice_text: Optional[str]
+    next_step: Optional[str]
     reading: Reading
