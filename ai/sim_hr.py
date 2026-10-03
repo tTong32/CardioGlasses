@@ -30,7 +30,7 @@ def simulate(scenario: str, seed: int = 42) -> list[tuple[int, Optional[float], 
             cutoffs = json.load(f)
             all_group = cutoffs["groups"]["all"]
             tau_fast = all_group["tau_p50"]
-            tau_slow = 1.3 * all_group["tau_p90"]
+            tau_slow = 1.3 * all_group["tau_p90"]  # Phase 3 spec: slow = 1.3 × p90
     else:
         # Fallback values before training
         tau_fast = 30
