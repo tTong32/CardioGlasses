@@ -9,6 +9,7 @@ import os
 import re
 import sqlite3
 import time
+from typing import Literal
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -16,11 +17,12 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from pydantic import BaseModel
 from fastapi.staticfiles import StaticFiles
 
 from ai import clinical
 from ai.contracts import Alert, PatientContext, Reading
-from backend import finchnode, voice
+from backend import caregiver, finchnode, voice
 
 ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")
@@ -165,6 +167,17 @@ class Hub:
 hub = Hub()
 
 
+def patient_display_name() -> str:
+    return os.environ.get("PATIENT_NAME") or finchnode.last_first_name or "Your family member"
+
+
+safety = caregiver.SafetyNet(hub.broadcast, patient_display_name)
+
+
+class CheckinAnswer(BaseModel):
+    answer: Literal["ok", "help"]
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     init_db()
@@ -239,7 +252,32 @@ async def post_alert(alert: Alert) -> Alert:
             "audio_source": audio_source,
         }
     )
+    await safety.on_alert(alert)
     return alert
+
+
+@app.get("/checkin")
+def get_checkin() -> dict:
+    """Current check-in (or null), caregiver notification log, and caregiver settings."""
+    return safety.snapshot()
+
+
+@app.post("/checkin/{checkin_id}/respond")
+async def respond_checkin(checkin_id: str, body: CheckinAnswer) -> dict:
+    try:
+        checkin = await safety.respond(checkin_id, body.answer)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="No such check-in")
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=f"Check-in already {exc}")
+    return checkin.public()
+
+
+@app.post("/checkin/ack")
+async def acknowledge_checkin() -> dict:
+    """The caregiver taps "I'm on it"."""
+    await safety.acknowledge()
+    return safety.snapshot()
 
 
 @app.get("/patient", response_model=PatientContext)
@@ -263,6 +301,9 @@ def status() -> dict:
         "patient_error": patient.error,
         "patient_loaded_at": int(patient.loaded_at * 1000),
         "record_effects": clinical.effects(patient.context),
+        "patient_name": patient_display_name(),
+        "caregiver_name": caregiver.caregiver_name(),
+        "imessage_configured": caregiver.imessage_configured(),
         "voice_configured": voice.is_configured(),
         "fallback_audio_levels": fallbacks,
     }
@@ -293,6 +334,11 @@ def get_audio(name: str) -> FileResponse:
     if not AUDIO_NAME.fullmatch(name) or not (voice.AUDIO_DIR / name).is_file():
         raise HTTPException(status_code=404)
     return FileResponse(voice.AUDIO_DIR / name, media_type="audio/mpeg")
+
+
+@app.get("/caregiver", include_in_schema=False)
+def caregiver_page() -> FileResponse:
+    return FileResponse(WEB_DIR / "caregiver.html")
 
 
 app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")

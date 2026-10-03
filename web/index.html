@@ -323,6 +323,25 @@
     .a-head { font-weight: 700; }
     .a-reason { font-size: 0.93rem; color: var(--ink-2); }
 
+    /* "Are you OK?" check-in */
+    .checkin-body { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 22px 20px calc(22px + env(safe-area-inset-bottom)); }
+    .ring { position: relative; width: 116px; height: 116px; }
+    .ring svg { width: 116px; height: 116px; transform: rotate(-90deg); }
+    .ring .track { fill: none; stroke: var(--rule); stroke-width: 9; }
+    .ring .bar { fill: none; stroke: var(--notify); stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 0.25s linear; }
+    .ring .count { position: absolute; inset: 0; display: grid; place-content: center; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+    .ring .count b { font-size: 2.4rem; line-height: 1; }
+    .ring .count small { font-size: 0.75rem; color: var(--ink-3); }
+    #checkin-title { font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; }
+    #checkin-text { color: var(--ink-2); max-width: 30ch; }
+    .big {
+      width: 100%; min-height: 60px; border-radius: 18px; border: 2px solid transparent; cursor: pointer;
+      font-size: 1.2rem; font-weight: 800;
+    }
+    .big.ok { background: var(--normal); color: var(--surface); }
+    .big.help { background: transparent; border-color: var(--escalate); color: var(--escalate); }
+    .big:active { transform: scale(0.98); }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; }
     }
@@ -461,6 +480,23 @@
       </div>
       <div class="sheet-body">
         <ul class="all-alerts" id="all-alerts"></ul>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Are you OK? (opened by the backend's check-in; not dismissible while waiting) -->
+  <dialog class="sheet" id="checkin-sheet" aria-labelledby="checkin-title" data-locked>
+    <div class="sheet-inner">
+      <div class="checkin-body">
+        <div class="ring" id="checkin-ring">
+          <svg viewBox="0 0 116 116" aria-hidden="true"><circle class="track" cx="58" cy="58" r="50"/><circle class="bar" id="checkin-bar" cx="58" cy="58" r="50" stroke-dasharray="314.16" stroke-dashoffset="0"/></svg>
+          <div class="count"><b id="checkin-count">60</b><small>seconds</small></div>
+        </div>
+        <h2 id="checkin-title">Are you OK?</h2>
+        <p id="checkin-text">Your heart rate has stayed high. If we don't hear from you, we'll let your caregiver know.</p>
+        <button type="button" class="big ok" id="checkin-ok">I'm OK</button>
+        <button type="button" class="big help" id="checkin-help">I need help</button>
+        <button type="button" class="pill quiet" id="checkin-close" hidden>Close</button>
       </div>
     </div>
   </dialog>
@@ -726,9 +762,78 @@
     }
     document.querySelectorAll("dialog.sheet").forEach(function (sheet) {
       sheet.addEventListener("click", function (e) {
+        if (sheet.hasAttribute("data-locked") && state.checkin && state.checkin.status === "waiting") return;
         if (e.target === sheet || e.target.closest("[data-close]")) sheet.close ? sheet.close() : sheet.removeAttribute("open");
       });
     });
+    // Escape must not dismiss a waiting check-in.
+    $("checkin-sheet").addEventListener("cancel", function (e) {
+      if (state.checkin && state.checkin.status === "waiting") e.preventDefault();
+    });
+
+    // ---------- "Are you OK?" check-in ----------
+    const RING = 314.16;
+    function renderCheckin(c) {
+      state.checkin = c;
+      if (!c) return;
+      const sheet = $("checkin-sheet");
+      const who = state.caregiverName || "your caregiver";
+      const waiting = c.status === "waiting";
+      $("checkin-ok").hidden = $("checkin-help").hidden = !waiting;
+      $("checkin-close").hidden = waiting;
+      $("checkin-ring").hidden = !waiting;
+      if (waiting) {
+        state.checkinDeadline = Date.now() + (c.remaining_s || 0) * 1000;
+        state.checkinTotal = Math.max(1, (c.deadline - c.started_at) / 1000);
+        $("checkin-title").textContent = "Are you OK?";
+        $("checkin-text").textContent = (c.level === "escalate" ? "Your heart rate has stayed high for a while." : "Your heart rate has stayed high.")
+          + " If we don't hear from you, we'll let " + who + " know.";
+        if (!sheet.open) {
+          openSheet("checkin-sheet");
+          if (navigator.vibrate) navigator.vibrate([250, 120, 250]);
+        }
+        tickCheckin();
+      } else if (c.status === "ok" || c.status === "resolved") {
+        if (sheet.open) sheet.close();
+      } else if (c.status === "help") {
+        $("checkin-title").textContent = "Help is on the way";
+        $("checkin-text").textContent = "We've let " + who + " know. Stay seated if you can.";
+        if (!sheet.open) openSheet("checkin-sheet");
+      } else if (c.status === "no_response") {
+        $("checkin-title").textContent = "We've let " + who + " know";
+        $("checkin-text").textContent = "You didn't answer, so we sent " + who + " a message.";
+        if (!sheet.open) openSheet("checkin-sheet");
+      }
+    }
+    function tickCheckin() {
+      const c = state.checkin;
+      if (!c || c.status !== "waiting") return;
+      const left = Math.max(0, (state.checkinDeadline - Date.now()) / 1000);
+      $("checkin-count").textContent = String(Math.ceil(left));
+      $("checkin-bar").setAttribute("stroke-dashoffset", String(RING * (1 - left / state.checkinTotal)));
+      if (left <= 0) $("checkin-text").textContent = "Letting " + (state.caregiverName || "your caregiver") + " know…";
+      if (left <= 0 && c.local) renderCheckin({ ...c, status: "no_response" });
+    }
+    setInterval(tickCheckin, 250);
+    async function answerCheckin(answer) {
+      const c = state.checkin;
+      if (!c || c.status !== "waiting") return;
+      if (c.local) return renderCheckin({ ...c, status: answer });
+      try {
+        const res = await fetch("/checkin/" + encodeURIComponent(c.id) + "/respond", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answer: answer })
+        });
+        if (res.ok) renderCheckin(await res.json());
+      } catch (err) {}
+    }
+    $("checkin-ok").addEventListener("click", function () { answerCheckin("ok"); });
+    $("checkin-help").addEventListener("click", function () { answerCheckin("help"); });
+    $("checkin-close").addEventListener("click", function () { $("checkin-sheet").close(); });
+    // Offline preview: the Test button starts a local check-in so the flow can be seen without a server.
+    function localCheckin(level) {
+      const now = Date.now();
+      renderCheckin({ id: "local", level: level, status: "waiting", started_at: now, deadline: now + 60000, remaining_s: 60, local: true });
+    }
     $("open-why").addEventListener("click", function () { openSheet("why-sheet"); });
     $("open-record").addEventListener("click", function () { openSheet("record-sheet"); });
     $("open-history").addEventListener("click", async function () {
@@ -810,6 +915,7 @@
       } else {
         banner.hidden = true;
       }
+      if (s.caregiver_name) state.caregiverName = s.caregiver_name;
       const effects = s.record_effects || [];
       const list = $("record-effects");
       list.replaceChildren();
@@ -839,6 +945,11 @@
           state.storedOnly = true;
           tick();
         }
+      } catch (err) {}
+      try {
+        const snap = await getJSON("/checkin");
+        if (snap.caregiver_name) state.caregiverName = snap.caregiver_name;
+        if (snap.current && snap.current.status === "waiting") renderCheckin(snap.current);
       } catch (err) {}
       try {
         const alerts = await getJSON("/alerts?limit=50");
@@ -875,6 +986,7 @@
           renderAlert(msg.data, true);
           speak(msg.data, msg.audio_url);
         }
+        if (msg.type === "checkin" && msg.data) renderCheckin(msg.data);
         if (msg.type === "status" && msg.data) {
           renderStatus(msg.data);
           getJSON("/patient").then(renderPatient).catch(() => {});
@@ -970,6 +1082,7 @@
         renderReading(alert.reading);
         renderAlert(alert, true);
         speak(alert, null);
+        if (alert.level === "notify" || alert.level === "escalate") localCheckin(alert.level);
         return;
       }
       try {

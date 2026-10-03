@@ -108,11 +108,21 @@ def fetch_record(base_url: str, patient_id: str, api_key: str | None = None, tim
     return response.json()
 
 
+last_first_name: str | None = None  # from the most recent fetch, for caregiver messages
+
+
+def first_name(record: dict) -> str | None:
+    name = ((record.get("data") or {}).get("demographics") or {}).get("name") or ""
+    return name.split()[0] if name.strip() else None
+
+
 def fetch_patient_context(config: Config) -> PatientContext:
     """Fetch the configured patient from FinchNode. Raises on any failure."""
+    global last_first_name
     record = fetch_record(
         os.environ.get("FINCHNODE_BASE_URL") or DEMO_BASE_URL,
         os.environ.get("FINCHNODE_PATIENT_ID") or DEFAULT_PATIENT_ID,
         os.environ.get("FINCHNODE_API_KEY") or None,
     )
+    last_first_name = first_name(record) or last_first_name
     return to_patient_context(record, config)

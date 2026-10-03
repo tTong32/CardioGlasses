@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from ai.contracts import Config, PatientContext
-from backend import finchnode, main, voice
+from backend import caregiver, finchnode, main, voice
 
 CONFIG = Config(min_quality=0.6, persist_s=30, deviation_trigger=2.0, cooldown_s=120)
 
@@ -39,6 +39,14 @@ ALERT = {
     "voice_text": "Please sit down and check your phone.", "next_step": "Sit down and review",
     "reading": READING,
 }
+
+
+def next_alert(ws):
+    """Skip check-in and caregiver messages; return the next alert message."""
+    while True:
+        msg = ws.receive_json()
+        if msg["type"] == "alert":
+            return msg
 
 
 # ---------- FinchNode mapping ----------
@@ -203,14 +211,14 @@ def test_alert_carries_elevenlabs_audio(app_env, monkeypatch):
     monkeypatch.setattr(voice, "synthesize", lambda text, timeout=8: calls.append(text) or b"mp3")
     with TestClient(main.app) as client, client.websocket_connect("/ws") as ws:
         client.post("/alerts", json=ALERT)
-        msg = ws.receive_json()
+        msg = next_alert(ws)
         assert msg["type"] == "alert"
         assert msg["data"] == ALERT
         assert msg["audio_source"] == "elevenlabs"
         assert client.get(msg["audio_url"]).content == b"mp3"
 
         client.post("/alerts", json=ALERT)
-        assert ws.receive_json()["audio_source"] == "cache"
+        assert next_alert(ws)["audio_source"] == "cache"
     assert calls == [ALERT["voice_text"]]
     assert client.get("/alerts").json()[0] == ALERT
 
@@ -221,7 +229,7 @@ def test_alert_uses_fallback_clip_when_elevenlabs_fails(app_env, monkeypatch):
     (app_env / "audio" / "fallback_notify.mp3").write_bytes(b"fallback")
     with TestClient(main.app) as client, client.websocket_connect("/ws") as ws:
         client.post("/alerts", json=ALERT)
-        msg = ws.receive_json()
+        msg = next_alert(ws)
         assert msg["audio_source"] == "fallback"
         assert msg["audio_url"] == "/audio/fallback_notify.mp3"
         assert client.get("/status").json()["fallback_audio_levels"] == ["notify"]
@@ -232,7 +240,7 @@ def test_alert_without_any_audio_still_broadcasts(app_env, monkeypatch):
     monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
     with TestClient(main.app) as client, client.websocket_connect("/ws") as ws:
         client.post("/alerts", json=ALERT)
-        msg = ws.receive_json()
+        msg = next_alert(ws)
         assert msg["audio_url"] is None
         assert msg["audio_source"] == "none"
 
@@ -241,3 +249,121 @@ def test_dashboard_is_served(app_env, monkeypatch):
     finchnode_down(monkeypatch)
     with TestClient(main.app) as client:
         assert "CardioGlasses" in client.get("/").text
+
+
+# ---------- Caregiver safety net ----------
+
+NORMAL = {**ALERT, "level": "normal", "headline": "Back within your usual range", "next_step": "No action needed"}
+
+
+@pytest.fixture
+def safety_env(app_env, monkeypatch):
+    finchnode_down(monkeypatch)
+    monkeypatch.delenv("ELEVENLABS_API_KEY", raising=False)
+    monkeypatch.setenv("PATIENT_NAME", "Harriet")
+    monkeypatch.setenv("CAREGIVER_NAME", "Alex")
+    monkeypatch.setenv("CHECKIN_TIMEOUT_S", "0.3")
+    sent = []
+    monkeypatch.setattr(caregiver, "send_imessage", lambda text: sent.append(text) or ("imessage", "guid-1"))
+    main.safety.current = None
+    main.safety.events.clear()
+    return sent
+
+
+def wait_for_status(client, status, timeout=3.0):
+    import time
+    end = time.time() + timeout
+    while time.time() < end:
+        current = client.get("/checkin").json()["current"]
+        if current and current["status"] == status:
+            return current
+        time.sleep(0.05)
+    raise AssertionError(f"check-in never reached {status}: {client.get('/checkin').json()}")
+
+
+def test_notify_starts_a_checkin_and_ok_closes_it(safety_env):
+    with TestClient(main.app) as client:
+        client.post("/alerts", json=ALERT)
+        current = client.get("/checkin").json()["current"]
+        assert current["status"] == "waiting" and current["level"] == "notify"
+        reply = client.post(f"/checkin/{current['id']}/respond", json={"answer": "ok"})
+        assert reply.json()["status"] == "ok"
+        snap = client.get("/checkin").json()
+        assert [e["kind"] for e in snap["events"]] == ["ok", "started"]
+        assert snap["patient_name"] == "Harriet" and snap["caregiver_name"] == "Alex"
+    assert safety_env == []  # no message when they answer
+
+
+def test_no_answer_texts_the_caregiver(safety_env):
+    with TestClient(main.app) as client:
+        client.post("/alerts", json=ALERT)
+        wait_for_status(client, "no_response")
+        event = client.get("/checkin").json()["events"][0]
+        assert event["kind"] == "no_response" and event["channel"] == "imessage" and event["urgent"]
+    assert len(safety_env) == 1
+    text = safety_env[0]
+    assert "Harriet hasn't responded" in text and "104 bpm" in text and "usual 68" in text and "48 seconds" in text
+    assert "asked to sit down and review" in text
+
+
+def test_need_help_texts_immediately(safety_env, monkeypatch):
+    monkeypatch.setenv("CHECKIN_TIMEOUT_S", "60")
+    with TestClient(main.app) as client:
+        client.post("/alerts", json=ALERT)
+        checkin_id = client.get("/checkin").json()["current"]["id"]
+        assert client.post(f"/checkin/{checkin_id}/respond", json={"answer": "help"}).json()["status"] == "help"
+        assert client.post(f"/checkin/{checkin_id}/respond", json={"answer": "ok"}).status_code == 409
+        assert client.post("/checkin/nope/respond", json={"answer": "ok"}).status_code == 404
+        snap = client.post("/checkin/ack").json()
+        assert snap["current"]["acknowledged"] and snap["events"][0]["kind"] == "acknowledged"
+    assert len(safety_env) == 1 and 'tapped "I need help"' in safety_env[0]
+
+
+def test_recovery_before_the_deadline_closes_quietly(safety_env, monkeypatch):
+    monkeypatch.setenv("CHECKIN_TIMEOUT_S", "60")
+    with TestClient(main.app) as client:
+        client.post("/alerts", json=ALERT)
+        client.post("/alerts", json=NORMAL)
+        assert client.get("/checkin").json()["current"]["status"] == "resolved"
+    assert safety_env == []
+
+
+def test_escalate_upgrades_a_waiting_checkin(safety_env, monkeypatch):
+    monkeypatch.setenv("CHECKIN_TIMEOUT_S", "60")
+    with TestClient(main.app) as client:
+        client.post("/alerts", json=ALERT)
+        first = client.get("/checkin").json()["current"]
+        client.post("/alerts", json={**ALERT, "level": "escalate"})
+        current = client.get("/checkin").json()["current"]
+        assert current["id"] == first["id"] and current["level"] == "escalate"
+
+
+def test_checkin_is_pushed_to_screens(safety_env, monkeypatch):
+    monkeypatch.setenv("CHECKIN_TIMEOUT_S", "60")
+    with TestClient(main.app) as client, client.websocket_connect("/ws") as ws:
+        client.post("/alerts", json=ALERT)
+        kinds = [ws.receive_json()["type"] for _ in range(3)]
+        assert kinds == ["alert", "caregiver", "checkin"]
+
+
+def test_imessage_needs_configuration(monkeypatch):
+    for key in ("CAREGIVER_PHONE", "PHOTON_IMESSAGE_ADDRESS", "PHOTON_IMESSAGE_TOKEN"):
+        monkeypatch.delenv(key, raising=False)
+    assert caregiver.send_imessage("hi") == ("screen", "iMessage not configured")
+
+
+def test_photon_sender_reports_errors_as_json(monkeypatch):
+    import json, shutil, subprocess
+    if shutil.which("node") is None or not (caregiver.SENDER.parent / "node_modules").is_dir():
+        pytest.skip("node or tools/imessage dependencies not installed")
+    env = {k: v for k, v in __import__("os").environ.items() if not k.startswith("PHOTON_")}
+    done = subprocess.run(["node", str(caregiver.SENDER), "+15550001111"], input="hello",
+                          capture_output=True, text=True, timeout=30, env=env, cwd=caregiver.SENDER.parent)
+    result = json.loads(done.stdout.strip().splitlines()[-1])
+    assert result["ok"] is False and "PHOTON_IMESSAGE_ADDRESS" in result["error"]
+
+
+def test_caregiver_text_retells_the_step_in_third_person():
+    from ai.contracts import Alert
+    alert = Alert.model_validate({**ALERT, "next_step": "Sit down and check your phone"})
+    assert caregiver.reading_summary(alert, "Harriet").endswith("Harriet was asked to sit down and check their phone.")
