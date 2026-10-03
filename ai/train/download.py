@@ -58,10 +58,35 @@ def download_dataset():
             subprocess.run(wget_cmd, check=True)
             print("wget download succeeded!")
         except (subprocess.CalledProcessError, FileNotFoundError) as e2:
-            print(f"ERROR: Both download methods failed.", file=sys.stderr)
-            print(f"  AWS S3: {e}", file=sys.stderr)
-            print(f"  wget: {e2}", file=sys.stderr)
-            sys.exit(1)
+            print(f"wget failed ({e2}), trying curl...")
+
+            # Third fallback: use curl with Python to download key files
+            try:
+                import urllib.request
+                base_url = "https://physionet.org/files/wearable-exercise-frailty/1.0.0/"
+
+                # Download the index page to get list of files
+                print("Fetching file list from PhysioNet...")
+                print("NOTE: This is a large dataset (~2.3 GB). For full download, please install 'wget' or 'awscli'.")
+                print("For now, downloading essential CSV files only...")
+
+                essential_files = ["subject-info.csv", "test-availability.csv", "LICENSE.txt", "SHA256SUMS.txt"]
+
+                for filename in essential_files:
+                    url = base_url + filename
+                    dest = data_dir / filename
+                    print(f"  Downloading {filename}...")
+                    urllib.request.urlretrieve(url, dest)
+
+                print("\nEssential files downloaded. For full dataset with WFDB records,")
+                print("please install wget (brew install wget) or awscli and re-run.")
+
+            except Exception as e3:
+                print(f"ERROR: All download methods failed.", file=sys.stderr)
+                print(f"  AWS S3: {e}", file=sys.stderr)
+                print(f"  wget: {e2}", file=sys.stderr)
+                print(f"  curl/urllib: {e3}", file=sys.stderr)
+                sys.exit(1)
 
     # Report what was downloaded
     print(f"\nDownload complete! Contents of {data_dir}:")
