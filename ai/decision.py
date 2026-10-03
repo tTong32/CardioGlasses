@@ -4,10 +4,11 @@ Rules gate first (quality OK, stationary, deviation persists), then an LLM reaso
 Low signal quality produces no alert. TODO: implement both stages.
 """
 
+from typing import Optional
 from ai.contracts import Alert, PatientContext, Reading
 
 
-def evaluate(reading: Reading, context: PatientContext) -> Alert | None:
+def evaluate(reading: Reading, context: PatientContext) -> Optional[Alert]:
     """Return an Alert only when the level changes.
 
     TODO: require quality >= context.config.min_quality, activity == "resting",
