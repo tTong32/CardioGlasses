@@ -39,6 +39,17 @@ Replay a Contract A recording:
 python -m ai.replay data/sample_rest.csv --speedup 10
 ```
 
+Check every API key with one call each, then pre-generate the offline voice clips:
+
+```bash
+python -m backend.check_keys
+python -m backend.voice --fallbacks
+```
+
+The patient comes from the FinchNode demo API (`patient-demo-polypharmacy`, no key needed). If FinchNode is down the backend uses the last cached copy, then `data/patient.json`, and the dashboard says so. Thresholds always come from `data/patient.json`. Alerts posted to `/alerts` are voiced with ElevenLabs and played on the dashboard; tap **Enable sound** on the phone first.
+
+Run the tests with `python -m pytest`.
+
 `python -m ai.replay --generate` rewrites `data/sample_rest.csv` and `data/sample_elevated.csv`. `python -m ai.pipeline data/sample_rest.csv --speedup 10` posts readings to the backend; the signal-processing stubs still return null.
 
 ## Git workflow

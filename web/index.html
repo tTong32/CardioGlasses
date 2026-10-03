@@ -15,47 +15,71 @@
       background: #0e141b;
       color: #e8eef4;
     }
+    header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     h1 { font-size: 1.15rem; margin: 0; }
-    .sub { color: #93a4b5; font-size: 0.85rem; margin: 4px 0 16px; }
-    .hero, .card {
-      background: #18222d;
-      border-radius: 16px;
-      padding: 16px;
+    .sub { color: #93a4b5; font-size: 0.85rem; margin: 4px 0 12px; }
+    .pill {
+      font-size: 0.75rem; font-weight: 650; padding: 4px 10px; border-radius: 999px;
+      background: #334455; color: #e8eef4; white-space: nowrap;
     }
+    .pill.live { background: #1f8a4c; }
+    .pill.warn { background: #c9a227; color: #111; }
+    .hero, .card { background: #18222d; border-radius: 16px; padding: 16px; }
     .hero { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .hr { font-size: 4.5rem; line-height: 0.9; font-weight: 700; }
     .unit, .muted { color: #93a4b5; font-size: 1rem; font-weight: 500; }
+    .small { font-size: 0.8rem; }
     .badge {
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      background: #334455;
+      padding: 8px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 700;
+      letter-spacing: 0.04em; text-transform: uppercase; background: #334455;
     }
     .badge.normal { background: #1f8a4c; }
     .badge.monitor { background: #c9a227; color: #111; }
     .badge.notify { background: #d06a1a; }
     .badge.escalate { background: #c0392b; }
+    .badge.mini { padding: 2px 8px; font-size: 0.65rem; }
+    .banner {
+      margin-top: 12px; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; font-weight: 600;
+      background: #4a3a10; color: #f3d77a;
+    }
+    .banner.bad { background: #4a1712; color: #f4a59b; }
+    .banner[hidden] { display: none; }
     .card { margin-top: 12px; }
     .card h2 { margin: 0 0 8px; font-size: 1rem; }
-    button {
-      width: 100%;
-      margin-top: 16px;
-      padding: 14px;
-      border: 0;
-      border-radius: 12px;
-      font-size: 1rem;
-      font-weight: 650;
-      background: #d6e4f0;
-      color: #10202c;
+    .card p { margin: 6px 0; }
+    .card.alert-card { border-left: 6px solid #334455; }
+    .card.alert-card.normal { border-color: #1f8a4c; }
+    .card.alert-card.monitor { border-color: #c9a227; }
+    .card.alert-card.notify { border-color: #d06a1a; }
+    .card.alert-card.escalate { border-color: #c0392b; }
+    .next { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #223142; font-weight: 600; }
+    dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 10px 0 0; font-size: 0.9rem; }
+    dt { color: #93a4b5; }
+    dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+    .tag { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #334455; margin-left: 6px; }
+    .tag.warn { background: #c9a227; color: #111; }
+    ul.history { list-style: none; margin: 0; padding: 0; }
+    ul.history li {
+      display: grid; grid-template-columns: auto auto 1fr; gap: 8px; align-items: center;
+      padding: 8px 0; border-top: 1px solid #243140; font-size: 0.85rem;
     }
+    ul.history li:first-child { border-top: 0; }
+    .row { display: flex; gap: 8px; margin-top: 16px; }
+    button {
+      flex: 1; padding: 14px; border: 0; border-radius: 12px; font-size: 1rem; font-weight: 650;
+      background: #d6e4f0; color: #10202c; cursor: pointer;
+    }
+    button.secondary { background: #2a3a4b; color: #e8eef4; }
+    button.attention { background: #f3d77a; color: #111; }
   </style>
 </head>
 <body>
-  <h1>CardioGlasses</h1>
-  <p class="sub" id="link">Connecting…</p>
+  <header>
+    <h1>CardioGlasses</h1>
+    <span class="pill" id="link">Connecting…</span>
+  </header>
+  <p class="sub" id="updated">Waiting for sensor data</p>
+
   <section class="hero">
     <div>
       <div class="hr"><span id="hr">--</span><span class="unit"> bpm</span></div>
@@ -63,132 +87,360 @@
     </div>
     <div class="badge" id="badge">—</div>
   </section>
+
+  <div class="banner bad" id="offline-banner" hidden>Sensor offline: no data received</div>
+  <div class="banner" id="quality-banner" hidden>Poor signal: readings are paused, not alerting</div>
+  <div class="banner" id="patient-banner" hidden></div>
+
+  <section class="card alert-card" id="alert-card">
+    <h2 id="headline">No alerts yet</h2>
+    <p id="reason" class="muted">When something changes, the reason shows here.</p>
+    <dl id="why">
+      <dt>Now vs usual</dt><dd id="why-hr">—</dd>
+      <dt>Above usual</dt><dd id="why-dev">—</dd>
+      <dt>Sustained for</dt><dd id="why-persist">—</dd>
+      <dt>Activity</dt><dd id="why-activity">—</dd>
+      <dt>Signal quality</dt><dd id="why-quality">—</dd>
+      <dt>Confidence</dt><dd id="why-confidence">—</dd>
+    </dl>
+    <div class="next">Next: <span id="next-step">—</span></div>
+  </section>
+
   <section class="card">
-    <h2>Patient</h2>
+    <h2>Patient <span class="tag" id="patient-source">—</span></h2>
     <p id="patient-line" class="muted">Loading context…</p>
     <p id="conditions"></p>
-    <p id="medications"></p>
+    <p id="medications" class="muted small"></p>
   </section>
+
   <section class="card">
-    <h2 id="headline">Waiting for an alert</h2>
-    <p id="reason" class="muted">Reason will show here.</p>
-    <p><strong>Next:</strong> <span id="next-step">—</span></p>
+    <h2>Alert history</h2>
+    <ul class="history" id="history"><li class="muted">No alerts yet</li></ul>
   </section>
-  <button type="button" id="simulate">Simulate</button>
+
+  <div class="row">
+    <button type="button" id="sound" class="attention">Enable sound</button>
+    <button type="button" id="simulate" class="secondary">Test alert</button>
+  </div>
+  <audio id="player" preload="auto"></audio>
+
   <script>
+    const OFFLINE_AFTER_MS = 6000;
     const MOCK_PATIENT = {
-      patient_id: "demo-1",
-      age: 71,
+      patient_id: "demo-1", age: 71, risk_tier: "high",
       conditions: ["hypertension", "type 2 diabetes"],
       medications: ["metoprolol", "metformin"],
-      risk_tier: "high"
+      config: { min_quality: 0.6, persist_s: 30, deviation_trigger: 2.0, cooldown_s: 120 }
     };
     const MOCK_READING = {
-      t: 1760000002000, hr: 72, activity: "resting", quality: 0.9,
+      t: Date.now(), hr: 72, ibi_ms: null, activity: "resting", quality: 0.9,
       baseline_hr: 68, deviation: 0.4, persist_s: 12
     };
-    const MOCK_ALERT = {
-      level: "normal",
-      headline: "Within your baseline",
-      reason: "Heart rate is close to your usual resting rate.",
-      next_step: "No action needed"
-    };
-    let live = false;
+    // Tiny silent WAV, played on tap to unlock audio on mobile browsers.
+    const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
+    const state = {
+      live: false,
+      mock: false,
+      soundOn: false,
+      patient: null,
+      lastReading: null,
+      lastReadingAt: null,
+      storedOnly: false,
+      currentLevel: null,
+      history: [],
+      socket: null,
+      retryMs: 1000
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const fmtTime = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const fmtNum = (v, digits) => (v == null ? "—" : Number(v).toFixed(digits));
+
+    function setLink(text, kind) {
+      const el = $("link");
+      el.textContent = text;
+      el.className = "pill" + (kind ? " " + kind : "");
+    }
+
+    function minQuality() {
+      return state.patient && state.patient.config ? state.patient.config.min_quality : 0.6;
+    }
+
+    // ---------- Readings ----------
     function renderReading(r) {
-      document.getElementById("hr").textContent = r.hr == null ? "--" : String(Math.round(r.hr));
+      state.lastReading = r;
+      state.lastReadingAt = Date.now();
+      $("hr").textContent = r.hr == null ? "--" : String(Math.round(r.hr));
       const bits = [];
       if (r.activity) bits.push(r.activity);
-      if (r.quality != null) bits.push("quality " + Number(r.quality).toFixed(2));
-      document.getElementById("meta").textContent = bits.join(" · ") || "No reading yet";
+      if (r.quality != null) bits.push("quality " + fmtNum(r.quality, 2));
+      $("meta").textContent = bits.join(" · ") || "Measuring…";
+      $("quality-banner").hidden = !(r.quality == null || r.quality < minQuality());
+      renderWhy(r, null);
+      tick();
     }
 
-    function renderAlert(a) {
-      const badge = document.getElementById("badge");
+    function renderWhy(r, alert) {
+      if (!r) return;
+      $("why-hr").textContent =
+        (r.hr == null ? "—" : Math.round(r.hr) + " bpm") +
+        " vs " + (r.baseline_hr == null ? "—" : Math.round(r.baseline_hr) + " bpm");
+      $("why-dev").textContent = r.deviation == null ? "—" : fmtNum(r.deviation, 1) + " SD";
+      $("why-persist").textContent = r.persist_s == null ? "—" : Math.round(r.persist_s) + " s";
+      $("why-activity").textContent = r.activity || "—";
+      $("why-quality").textContent = r.quality == null ? "unknown" : fmtNum(r.quality, 2);
+      if (alert) $("why-confidence").textContent = alert.confidence == null ? "—" : Math.round(alert.confidence * 100) + "%";
+    }
+
+    // ---------- Alerts ----------
+    function renderAlert(a, live) {
+      state.currentLevel = a.level || null;
+      const badge = $("badge");
       badge.textContent = a.level || "—";
       badge.className = "badge" + (a.level ? " " + a.level : "");
-      document.getElementById("headline").textContent = a.headline || "Alert";
-      document.getElementById("reason").textContent = a.reason || "";
-      document.getElementById("next-step").textContent = a.next_step || "—";
-    }
-
-    function renderPatient(p) {
-      document.getElementById("patient-line").textContent =
-        p.patient_id + " · age " + p.age + " · " + p.risk_tier + " risk";
-      document.getElementById("conditions").textContent = "Conditions: " + (p.conditions || []).join(", ");
-      document.getElementById("medications").textContent = "Medications: " + (p.medications || []).join(", ");
-    }
-
-    function showMock(message) {
-      if (live) return;
-      document.getElementById("link").textContent = message;
-      renderPatient(MOCK_PATIENT);
-      renderReading(MOCK_READING);
-      renderAlert(MOCK_ALERT);
-    }
-
-    async function loadPatient() {
-      try {
-        const res = await fetch("/patient");
-        if (!res.ok) throw new Error(String(res.status));
-        renderPatient(await res.json());
-      } catch (err) {
-        renderPatient(MOCK_PATIENT);
+      $("alert-card").className = "card alert-card" + (a.level ? " " + a.level : "");
+      $("headline").textContent = a.headline || "Alert";
+      $("reason").textContent = a.reason || "";
+      $("next-step").textContent = a.next_step || "—";
+      renderWhy(a.reading || state.lastReading, a);
+      if (live) {
+        state.history.unshift(a);
+        state.history = state.history.slice(0, 10);
+        renderHistory();
       }
+      $("simulate").textContent = a.level === "notify" || a.level === "escalate" ? "Test recovery" : "Test alert";
     }
 
-    function connect() {
-      if (!location.host) {
-        showMock("Offline — showing mock data");
+    function renderHistory() {
+      const list = $("history");
+      list.replaceChildren();
+      if (!state.history.length) {
+        const li = document.createElement("li");
+        li.className = "muted";
+        li.textContent = "No alerts yet";
+        list.append(li);
         return;
       }
+      for (const a of state.history) {
+        const li = document.createElement("li");
+        const time = document.createElement("span");
+        time.className = "muted";
+        time.textContent = fmtTime(a.t);
+        const badge = document.createElement("span");
+        badge.className = "badge mini " + a.level;
+        badge.textContent = a.level;
+        const text = document.createElement("span");
+        text.textContent = a.headline || "";
+        li.append(time, badge, text);
+        list.append(li);
+      }
+    }
+
+    // ---------- Voice ----------
+    function speak(alert, audioUrl) {
+      if (!state.soundOn) {
+        $("sound").textContent = "Enable sound (missed alert)";
+        return;
+      }
+      if (audioUrl) {
+        const player = $("player");
+        player.src = audioUrl;
+        player.play().catch(() => speakWithBrowser(alert.voice_text));
+      } else {
+        speakWithBrowser(alert.voice_text);
+      }
+    }
+
+    function speakWithBrowser(text) {
+      if (!text || !("speechSynthesis" in window)) return;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
+    }
+
+    $("sound").addEventListener("click", function () {
+      state.soundOn = !state.soundOn;
+      if (state.soundOn) {
+        const player = $("player");
+        player.src = SILENT_WAV;
+        player.play().catch(() => {});
+        if ("speechSynthesis" in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+      }
+      $("sound").textContent = state.soundOn ? "Sound on" : "Enable sound";
+      $("sound").className = state.soundOn ? "secondary" : "attention";
+    });
+
+    // ---------- Patient + status ----------
+    function renderPatient(p) {
+      state.patient = p;
+      $("patient-line").textContent = p.patient_id + " · age " + p.age + " · " + p.risk_tier + " risk";
+      $("conditions").textContent = "Conditions: " + ((p.conditions || []).join(", ") || "none listed");
+      const meds = p.medications || [];
+      const shown = meds.slice(0, 5).join(", ");
+      $("medications").textContent = "Medications: " + (shown || "none listed") + (meds.length > 5 ? " +" + (meds.length - 5) + " more" : "");
+    }
+
+    function renderStatus(s) {
+      const tag = $("patient-source");
+      const labels = { finchnode: "FinchNode", cache: "cached", local: "local fallback", mock: "mock" };
+      tag.textContent = labels[s.patient_source] || s.patient_source;
+      tag.className = "tag" + (s.patient_source === "finchnode" ? "" : " warn");
+      const banner = $("patient-banner");
+      if (s.patient_source === "cache") {
+        banner.textContent = "FinchNode unreachable: using the last cached patient record";
+        banner.hidden = false;
+      } else if (s.patient_source === "local") {
+        banner.textContent = "FinchNode unavailable: using the built-in demo patient";
+        banner.hidden = false;
+      } else {
+        banner.hidden = true;
+      }
+    }
+
+    async function getJSON(path) {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(path + " " + res.status);
+      return res.json();
+    }
+
+    async function loadInitial() {
+      try { renderStatus(await getJSON("/status")); } catch (err) {}
+      try { renderPatient(await getJSON("/patient")); } catch (err) { renderPatient(MOCK_PATIENT); }
+      try {
+        const readings = await getJSON("/readings?limit=1");
+        if (readings.length) {
+          renderReading(readings[0]);
+          // Replay timestamps aren't wall-clock, so don't age stored data; wait for a live one.
+          state.storedOnly = true;
+        }
+      } catch (err) {}
+      try {
+        const alerts = await getJSON("/alerts?limit=10");
+        state.history = alerts;
+        renderHistory();
+        if (alerts.length) renderAlert(alerts[0], false);
+      } catch (err) {}
+    }
+
+    // ---------- Live connection ----------
+    function connect() {
+      if (!location.host) return showMock("Offline: mock data");
       let socket;
       try {
         const proto = location.protocol === "https:" ? "wss" : "ws";
         socket = new WebSocket(proto + "://" + location.host + "/ws");
       } catch (err) {
-        showMock("Offline — showing mock data");
-        return;
+        return scheduleReconnect();
       }
-      const timer = setTimeout(function () {
-        showMock("WebSocket unavailable — showing mock data");
-        try { socket.close(); } catch (err) {}
-      }, 2500);
+      state.socket = socket;
       socket.onopen = function () {
-        live = true;
-        clearTimeout(timer);
-        document.getElementById("link").textContent = "Live";
+        state.live = true;
+        state.retryMs = 1000;
+        setLink("Live", "live");
       };
       socket.onmessage = function (event) {
         let msg;
         try { msg = JSON.parse(event.data); } catch (err) { return; }
-        if (msg.type === "reading" && msg.data) renderReading(msg.data);
-        if (msg.type === "alert" && msg.data) renderAlert(msg.data);
+        if (msg.type === "reading" && msg.data) {
+          state.storedOnly = false;
+          renderReading(msg.data);
+        }
+        if (msg.type === "alert" && msg.data) {
+          renderAlert(msg.data, true);
+          speak(msg.data, msg.audio_url);
+        }
+        if (msg.type === "status" && msg.data) {
+          renderStatus(msg.data);
+          getJSON("/patient").then(renderPatient).catch(() => {});
+        }
+      };
+      socket.onclose = function () {
+        if (state.socket !== socket) return;
+        state.live = false;
+        scheduleReconnect();
       };
       socket.onerror = function () {
-        clearTimeout(timer);
-        showMock("WebSocket unavailable — showing mock data");
+        try { socket.close(); } catch (err) {}
       };
     }
 
-    document.getElementById("simulate").addEventListener("click", function () {
-      const reading = {
-        t: Date.now(), hr: 104, ibi_ms: [580, 570, 590], activity: "resting",
-        quality: 0.86, baseline_hr: 68, deviation: 2.6, persist_s: 48
-      };
-      renderReading(reading);
-      renderAlert({
-        level: "notify",
-        headline: "Elevated heart rate at rest",
-        reason: "Heart rate has stayed high while resting, compared with your baseline and history.",
-        next_step: "Sit down and review",
-        reading: reading
-      });
-      document.getElementById("link").textContent = live ? "Live · simulated locally" : "Simulated locally";
+    function scheduleReconnect() {
+      setLink("Reconnecting…", "warn");
+      setTimeout(connect, state.retryMs);
+      state.retryMs = Math.min(state.retryMs * 2, 5000);
+    }
+
+    function showMock(message) {
+      state.mock = true;
+      setLink(message, "warn");
+      renderStatus({ patient_source: "mock" });
+      renderPatient(MOCK_PATIENT);
+      renderReading(MOCK_READING);
+    }
+
+    // ---------- Offline detection ----------
+    function tick() {
+      const banner = $("offline-banner");
+      if (state.mock || state.storedOnly || state.lastReadingAt == null) {
+        banner.hidden = true;
+        $("updated").textContent = state.mock
+          ? "Mock data"
+          : state.storedOnly ? "Last stored reading · waiting for live data" : "Waiting for sensor data";
+        return;
+      }
+      const age = Date.now() - state.lastReadingAt;
+      const secs = Math.max(0, Math.round(age / 1000));
+      $("updated").textContent = "Updated " + (secs < 2 ? "just now" : secs + " s ago");
+      const offline = age > OFFLINE_AFTER_MS;
+      banner.hidden = !offline;
+      if (offline) banner.textContent = "Sensor offline: no data for " + secs + " s";
+    }
+    setInterval(tick, 1000);
+
+    // ---------- Test alert ----------
+    function testAlert() {
+      const recovering = state.currentLevel === "notify" || state.currentLevel === "escalate";
+      const reading = recovering
+        ? { t: Date.now(), hr: 70, ibi_ms: [860, 850, 870], activity: "resting", quality: 0.9, baseline_hr: 68, deviation: 0.3, persist_s: 0 }
+        : { t: Date.now(), hr: 104, ibi_ms: [580, 570, 590], activity: "resting", quality: 0.86, baseline_hr: 68, deviation: 2.6, persist_s: 48 };
+      return recovering
+        ? {
+            t: Date.now(), level: "normal", confidence: 0.9,
+            headline: "Back within your usual range",
+            reason: "Heart rate has returned close to your resting baseline. (Test alert)",
+            voice_text: "Your heart rate is back within your usual range. I'll keep monitoring.",
+            next_step: "No action needed", reading: reading
+          }
+        : {
+            t: Date.now(), level: "notify", confidence: 0.8,
+            headline: "Elevated heart rate at rest",
+            reason: "Heart rate has stayed well above your usual resting rate while you're sitting still. (Test alert)",
+            voice_text: "Your heart rate has stayed high while you're resting. Please sit down and check your phone.",
+            next_step: "Sit down and review", reading: reading
+          };
+    }
+
+    $("simulate").addEventListener("click", async function () {
+      const alert = testAlert();
+      if (!state.live) {
+        renderReading(alert.reading);
+        renderAlert(alert, true);
+        speak(alert, null);
+        return;
+      }
+      try {
+        const res = await fetch("/alerts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(alert)
+        });
+        if (!res.ok) throw new Error(String(res.status));
+      } catch (err) {
+        setLink("Test alert failed", "warn");
+      }
     });
 
-    loadPatient();
-    connect();
+    loadInitial().then(connect);
   </script>
 </body>
 </html>

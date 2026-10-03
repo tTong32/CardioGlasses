@@ -3,6 +3,7 @@ uvicorn[standard]
 pydantic
 python-dotenv
 requests
+httpx
 numpy
 scipy
 pyserial
