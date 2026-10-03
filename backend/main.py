@@ -22,7 +22,7 @@ from fastapi.staticfiles import StaticFiles
 
 from ai import clinical
 from ai.contracts import Alert, PatientContext, Reading
-from backend import caregiver, finchnode, voice
+from backend import caregiver, finchnode, voice, walk
 
 ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")
@@ -174,6 +174,24 @@ def patient_display_name() -> str:
 safety = caregiver.SafetyNet(hub.broadcast, patient_display_name)
 
 
+async def speak_coach(text: str, kind: str) -> None:
+    """Voice a walk-coaching line on the phone (ElevenLabs, else the phone's own voice)."""
+    try:
+        name, source = await asyncio.wait_for(asyncio.to_thread(voice.audio_for, text, "coach"), timeout=VOICE_TIMEOUT_S)
+    except Exception as exc:
+        log.warning("Coach voice failed: %s", exc)
+        name, source = None, "none"
+    await hub.broadcast({
+        "type": "coach",
+        "data": {"t": int(time.time() * 1000), "kind": kind, "text": text},
+        "audio_url": f"/audio/{name}" if name else None,
+        "audio_source": source,
+    })
+
+
+coach = walk.Coach(hub.broadcast, speak_coach, lambda: patient.context, patient_display_name, note=safety.note)
+
+
 class CheckinAnswer(BaseModel):
     answer: Literal["ok", "help"]
 
@@ -221,7 +239,23 @@ def health() -> dict:
 async def post_reading(reading: Reading) -> Reading:
     _insert("readings", reading.t, reading.model_dump_json())
     await hub.broadcast({"type": "reading", "data": reading.model_dump(mode="json")})
+    await coach.on_reading(reading)
     return reading
+
+
+@app.get("/walk")
+def get_walk() -> dict:
+    return coach.state.public()
+
+
+@app.post("/walk/start")
+async def start_walk() -> dict:
+    return (await coach.start()).public()
+
+
+@app.post("/walk/stop")
+async def stop_walk() -> dict:
+    return (await coach.stop()).public()
 
 
 async def _alert_audio(alert: Alert) -> tuple[str | None, str]:

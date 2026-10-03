@@ -39,6 +39,7 @@ SCENARIOS = {
     "poor-signal": "HR goes high but the signal is poor -> no alert, dashboard says poor signal",
     "dropout": "Normal rest with a 16 s gap in data -> dashboard shows sensor offline",
     "normal": "Quiet rest only; HR stays near baseline, no alerts",
+    "walk": "Guided walk: presses Walk, drifts above the zone (voice: slow down), back in zone, ends, healthy recovery",
 }
 
 
@@ -52,11 +53,19 @@ class Phase:
     quality: float = 0.9
     signal_status: str = "ok"
     send: bool = True
+    quiet: bool = False  # expected (e.g. cooling down after a walk): never counts toward an alert
 
 
 def phases_for(scenario: str) -> list[Phase]:
     rest = Phase(60, "resting", BASELINE_HR, BASELINE_HR)
     exert = Phase(100, "moving", BASELINE_HR, 112)
+    if scenario == "walk":
+        return [
+            Phase(30, "resting", BASELINE_HR, BASELINE_HR),
+            Phase(110, "moving", BASELINE_HR + 2, 110),  # pace picks up; crosses the zone top
+            Phase(160, "moving", 110, 94),  # slows down after the voice tip
+            Phase(250, "resting", 94, BASELINE_HR + 2, shape="recovery", quiet=True),
+        ]
     if scenario == "normal":
         return [Phase(180, "resting", BASELINE_HR, BASELINE_HR)]
     if scenario == "dropout":
@@ -154,6 +163,10 @@ class Event:
     offset_s: float
     reading: Reading | None  # None = sensor dropout (nothing sent)
     alert: Alert | None
+    action: str | None = None  # "walk_start" / "walk_stop": press the dashboard's Walk button
+
+
+WALK_ACTIONS = {"walk": {30: "walk_start", 160: "walk_stop"}}
 
 
 def build_timeline(scenario: str, context: PatientContext, t0_ms: int = 0, seed: int = 7) -> list[Event]:
@@ -180,7 +193,7 @@ def build_timeline(scenario: str, context: PatientContext, t0_ms: int = 0, seed:
         deviation = (hr - BASELINE_HR) / BASELINE_SD
         quality = max(0.0, min(1.0, phase.quality + rng.gauss(0, 0.03)))
         trusted = quality >= cfg.min_quality and phase.signal_status == "ok"
-        if trusted and phase.activity == "resting" and deviation >= cfg.deviation_trigger:
+        if trusted and phase.activity == "resting" and not phase.quiet and deviation >= cfg.deviation_trigger:
             persist += STEP_S
         else:
             persist = 0.0
@@ -226,7 +239,7 @@ def build_timeline(scenario: str, context: PatientContext, t0_ms: int = 0, seed:
             new_level = "normal"
         alert = make_alert(new_level, reading, context) if new_level != level else None
         level = new_level
-        events.append(Event(s, reading, alert))
+        events.append(Event(s, reading, alert, WALK_ACTIONS.get(scenario, {}).get(int(s))))
         s += STEP_S
     return events
 
@@ -246,6 +259,10 @@ def run(scenario: str, base_url: str, speed: float, loop: bool) -> None:
             delay = event.offset_s / speed - (time.monotonic() - started)
             if delay > 0:
                 time.sleep(delay)
+            if event.action:
+                path = "/walk/start" if event.action == "walk_start" else "/walk/stop"
+                requests.post(f"{base_url}{path}", timeout=15).raise_for_status()
+                print(f"{event.offset_s:5.0f}s  -> {event.action.replace('_', ' ')}")
             if event.reading is None:
                 print(f"{event.offset_s:5.0f}s  (sensor dropout, nothing sent)")
                 continue

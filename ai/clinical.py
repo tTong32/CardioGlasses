@@ -51,6 +51,21 @@ def rate_control_medications(context: PatientContext) -> list[str]:
     return [m for m in context.medications if any(term in m.lower() for term in RATE_CONTROL_TERMS)]
 
 
+def walk_zone(context: PatientContext, resting_hr: float | None) -> tuple[int, int, str]:
+    """Heart-rate zone for a guided walk: (low, high, plain-English reason).
+
+    On rate-controlling medication the age formula doesn't apply, so cardiac rehab uses
+    resting + 20-30 bpm. Otherwise 40-60% of heart-rate reserve (Karvonen, max = 220 - age),
+    the usual starting range for supervised cardiac rehab.
+    """
+    rest = resting_hr or context.clinic_resting_hr or 70.0
+    meds = rate_control_medications(context)
+    if meds:
+        return round(rest + 20), round(rest + 30), f"usual {rest:.0f} + 20 to 30, because of {_short_med(meds[0])}"
+    reserve = max(20.0, (220 - context.age) - rest)
+    return round(rest + 0.4 * reserve), round(rest + 0.6 * reserve), "40-60% of your heart-rate reserve for your age"
+
+
 def _short_med(name: str) -> str:
     words = [w for w in name.split() if w.isalpha() and w.lower() not in ("hr", "mg", "oral", "tablet", "extended", "release")]
     hit = next((w for w in words if any(t in w.lower() for t in RATE_CONTROL_TERMS)), None)

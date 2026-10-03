@@ -173,6 +173,10 @@ class SafetyNet:
             await self._close("help", text, notify=True)
         return self.current
 
+    async def note(self, text: str) -> None:
+        """A non-urgent line for the caregiver's activity log (e.g. a finished walk)."""
+        await self._record(CaregiverEvent(now_ms(), "note", text))
+
     async def acknowledge(self) -> None:
         if self.current is not None and self.current.status in ("help", "no_response") and not self.current.acknowledged:
             self.current.acknowledged = True
