@@ -41,6 +41,7 @@ class Reading(BaseModel):
     recovery_tau_s: Optional[float]
     hr_drop_60s: Optional[float]
     recovery_ratio: Optional[float]
+    recovery_percentile: Optional[float]
     recovery_verdict: Optional[RecoveryVerdict]
     signal_status: Optional[SignalStatus]
 
