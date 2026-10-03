@@ -30,6 +30,8 @@ RECORD = {
 READING = {
     "t": 1760000002000, "hr": 104, "ibi_ms": [580, 570], "activity": "resting",
     "quality": 0.86, "baseline_hr": 68, "deviation": 2.6, "persist_s": 48,
+    "recovery_tau_s": None, "hr_drop_60s": None, "recovery_ratio": None,
+    "recovery_percentile": None, "recovery_verdict": None, "signal_status": "ok",
 }
 ALERT = {
     "t": 1760000050000, "level": "notify", "confidence": 0.8,

@@ -6,7 +6,7 @@ A — Hardware → AI: one JSON line per sample over USB serial, ~50 Hz; same co
 {"t": 1760000000123, "ppg": 51234, "ax": 0.02, "ay": -0.98, "az": 0.10, "gx": 0.5, "gy": 0.1, "gz": 0.0}
 
 B — AI → Software, `Reading`, every ~2 s
-{"t": 1760000002000, "hr": 78, "ibi_ms": [790, 772, 765], "activity": "resting|moving", "quality": 0.91, "baseline_hr": 68, "deviation": 1.8, "persist_s": 45}
+{"t": 1760000002000, "hr": 78, "ibi_ms": [790, 772, 765], "activity": "resting|moving", "quality": 0.91, "baseline_hr": 68, "deviation": 1.8, "persist_s": 45, "recovery_tau_s": 52.0, "hr_drop_60s": 24.0, "recovery_ratio": 0.8, "recovery_percentile": 40.0, "recovery_verdict": "normal|slow|very_slow", "signal_status": "ok|poor|offline"}
 
 C — AI → Software, `Alert`, only on state change
 {"t": 1760000050000, "level": "normal|monitor|notify|escalate", "confidence": 0.8, "headline": "Elevated heart rate at rest", "reason": "…compared with your baseline and history…", "voice_text": "Your heart rate has stayed high while you're resting. Please sit down and check your phone.", "next_step": "Sit down and review", "reading": { … }}

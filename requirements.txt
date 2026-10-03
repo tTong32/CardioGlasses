@@ -10,5 +10,6 @@ pyserial
 websockets
 matplotlib
 pandas
-anthropic
+google-genai
 pytest
+wfdb

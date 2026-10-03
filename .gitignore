@@ -7,10 +7,7 @@ node_modules/
 data/*.csv
 !data/sample_rest.csv
 !data/sample_elevated.csv
-<<<<<<< Updated upstream
 data/audio/*
 !data/audio/fallback_*.mp3
 data/finchnode_cache.json
-=======
 data/external/
->>>>>>> Stashed changes

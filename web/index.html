@@ -101,6 +101,7 @@
       <dt>Sustained for</dt><dd id="why-persist">—</dd>
       <dt>Activity</dt><dd id="why-activity">—</dd>
       <dt>Signal quality</dt><dd id="why-quality">—</dd>
+      <dt>Recovery</dt><dd id="why-recovery">—</dd>
       <dt>Confidence</dt><dd id="why-confidence">—</dd>
     </dl>
     <div class="next">Next: <span id="next-step">—</span></div>
@@ -132,9 +133,13 @@
       medications: ["metoprolol", "metformin"],
       config: { min_quality: 0.6, persist_s: 30, deviation_trigger: 2.0, cooldown_s: 120 }
     };
+    const NO_RECOVERY = {
+      recovery_tau_s: null, hr_drop_60s: null, recovery_ratio: null,
+      recovery_percentile: null, recovery_verdict: null
+    };
     const MOCK_READING = {
       t: Date.now(), hr: 72, ibi_ms: null, activity: "resting", quality: 0.9,
-      baseline_hr: 68, deviation: 0.4, persist_s: 12
+      baseline_hr: 68, deviation: 0.4, persist_s: 12, ...NO_RECOVERY, signal_status: "ok"
     };
     // Tiny silent WAV, played on tap to unlock audio on mobile browsers.
     const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
@@ -147,6 +152,7 @@
       lastReading: null,
       lastReadingAt: null,
       storedOnly: false,
+      sensorOffline: false,
       currentLevel: null,
       history: [],
       socket: null,
@@ -176,7 +182,9 @@
       if (r.activity) bits.push(r.activity);
       if (r.quality != null) bits.push("quality " + fmtNum(r.quality, 2));
       $("meta").textContent = bits.join(" · ") || "Measuring…";
-      $("quality-banner").hidden = !(r.quality == null || r.quality < minQuality());
+      const poor = r.signal_status ? r.signal_status === "poor" : (r.quality == null || r.quality < minQuality());
+      $("quality-banner").hidden = !poor;
+      state.sensorOffline = r.signal_status === "offline";
       renderWhy(r, null);
       tick();
     }
@@ -190,6 +198,10 @@
       $("why-persist").textContent = r.persist_s == null ? "—" : Math.round(r.persist_s) + " s";
       $("why-activity").textContent = r.activity || "—";
       $("why-quality").textContent = r.quality == null ? "unknown" : fmtNum(r.quality, 2);
+      const verdicts = { normal: "normal", slow: "slow", very_slow: "very slow" };
+      $("why-recovery").textContent = r.recovery_verdict
+        ? verdicts[r.recovery_verdict] + (r.recovery_tau_s == null ? "" : " (τ " + Math.round(r.recovery_tau_s) + " s)")
+        : "—";
       if (alert) $("why-confidence").textContent = alert.confidence == null ? "—" : Math.round(alert.confidence * 100) + "%";
     }
 
@@ -391,9 +403,9 @@
       const age = Date.now() - state.lastReadingAt;
       const secs = Math.max(0, Math.round(age / 1000));
       $("updated").textContent = "Updated " + (secs < 2 ? "just now" : secs + " s ago");
-      const offline = age > OFFLINE_AFTER_MS;
-      banner.hidden = !offline;
-      if (offline) banner.textContent = "Sensor offline: no data for " + secs + " s";
+      const stale = age > OFFLINE_AFTER_MS;
+      banner.hidden = !(stale || state.sensorOffline);
+      banner.textContent = stale ? "Sensor offline: no data for " + secs + " s" : "Sensor offline: glasses not connected";
     }
     setInterval(tick, 1000);
 
@@ -401,8 +413,11 @@
     function testAlert() {
       const recovering = state.currentLevel === "notify" || state.currentLevel === "escalate";
       const reading = recovering
-        ? { t: Date.now(), hr: 70, ibi_ms: [860, 850, 870], activity: "resting", quality: 0.9, baseline_hr: 68, deviation: 0.3, persist_s: 0 }
-        : { t: Date.now(), hr: 104, ibi_ms: [580, 570, 590], activity: "resting", quality: 0.86, baseline_hr: 68, deviation: 2.6, persist_s: 48 };
+        ? { t: Date.now(), hr: 70, ibi_ms: [860, 850, 870], activity: "resting", quality: 0.9, baseline_hr: 68, deviation: 0.3, persist_s: 0,
+            recovery_tau_s: 45, hr_drop_60s: 30, recovery_ratio: null, recovery_percentile: null,
+            recovery_verdict: "normal", signal_status: "ok" }
+        : { t: Date.now(), hr: 104, ibi_ms: [580, 570, 590], activity: "resting", quality: 0.86, baseline_hr: 68, deviation: 2.6, persist_s: 48,
+            ...NO_RECOVERY, signal_status: "ok" };
       return recovering
         ? {
             t: Date.now(), level: "normal", confidence: 0.9,
