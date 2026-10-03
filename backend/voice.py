@@ -4,6 +4,8 @@ Audio files land in data/audio/ and are served at /audio/<name>. The dashboard p
 them; if no file can be produced it falls back to the browser's speech synthesis.
 """
 
+from __future__ import annotations
+
 import argparse
 import hashlib
 import logging

@@ -157,10 +157,10 @@ def _generate_imu_signal(
 
     # Add noise
     for arr in [ax, ay, az]:
-        arr += rng.gauss(0, cfg.IMU_REST_ACCEL_NOISE) * np.random.default_rng(rng.randint(0, 1e9)).normal(0, 1, n_samples)
+        arr += rng.gauss(0, cfg.IMU_REST_ACCEL_NOISE) * np.random.default_rng(rng.randint(0, 10**9)).normal(0, 1, n_samples)
 
     for arr in [gx, gy, gz]:
-        arr += rng.gauss(0, cfg.IMU_REST_GYRO_NOISE) * np.random.default_rng(rng.randint(0, 1e9)).normal(0, 1, n_samples)
+        arr += rng.gauss(0, cfg.IMU_REST_GYRO_NOISE) * np.random.default_rng(rng.randint(0, 10**9)).normal(0, 1, n_samples)
 
     # Add movement
     if motion_fn is not None:
@@ -279,6 +279,20 @@ SCENARIOS = {
         ),
         motion_fn=_motion_window(90, 150),
         seed=4,
+    ),
+
+    # HR rises and stays up while the wearer sits still, with no exertion to explain it.
+    "elevated_rest": Scenario(
+        name="elevated_rest",
+        duration_s=360,
+        hr_fn=_piecewise(
+            (90, _constant_hr(68)),
+            (110, _linear_ramp(90, 110, 68, 102)),
+            (250, _constant_hr(102)),
+            (280, _linear_ramp(250, 280, 102, 70)),
+            (360, _constant_hr(70)),
+        ),
+        seed=7,
     ),
 
     "noisy": Scenario(

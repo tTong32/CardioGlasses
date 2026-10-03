@@ -9,6 +9,8 @@ fallback if the glasses or AI fail on the day. Alerts follow the planned rules
     python -m tools.demo_sim --list
 """
 
+from __future__ import annotations
+
 import argparse
 import math
 import os

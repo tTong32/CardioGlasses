@@ -69,7 +69,17 @@ python -m tools.serial_check --list
 python -m tools.serial_check --port COM5 --seconds 120 --out data/rec_rest.csv
 ```
 
-`python -m ai.replay --generate` rewrites `data/sample_rest.csv` and `data/sample_elevated.csv`. `python -m ai.pipeline data/sample_rest.csv --speedup 10` posts readings to the backend; the signal-processing stubs still return null.
+### AI pipeline
+
+Turns samples into Readings every 2 s (10 s analysis window): heart rate and beat intervals from the PPG, an honest 0-1 quality score, resting/moving from the IMU, a resting baseline (frozen during episodes), recovery after exertion, and a rules-based alert level. Gemini (`GEMINI_MODEL`, default `gemini-flash-lite-latest`) writes the wording; templates take over if it's slow or unavailable.
+
+```bash
+python -m ai.pipeline --scenario elevated_rest --speed 10        # synthetic, posts to the backend
+python -m ai.pipeline --scenario slow_recovery --dry-run          # print only, no backend
+python -m ai.pipeline data/rec_rest.csv --speed 5                 # a recording
+```
+
+Scenarios: `rest`, `moving`, `noisy`, `normal_recovery` (no alerts), `elevated_rest` (monitor -> notify -> escalate -> normal), `slow_recovery` and `calibration_then_slow` (notify -> escalate). Add `--no-llm` for templated wording.
 
 ## Git workflow
 

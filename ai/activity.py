@@ -6,14 +6,16 @@ from dataclasses import dataclass
 from collections import deque
 import numpy as np
 
+import ai.config as cfg
+
 
 # ============================================================================
 # TUNABLE CONSTANTS
 # ============================================================================
 
 WINDOW_SIZE_MS = 2000  # Classify activity over 2-second windows
-STILLNESS_THRESHOLD = 0.05  # m/s² std - below this = resting
-SAMPLE_RATE_MS = 10  # Accelerometer samples every 10ms
+STILLNESS_THRESHOLD = cfg.ACTIVITY_ACCEL_THRESHOLD_G  # g std (Contract A accel is in g) - below this = resting
+SAMPLE_RATE_MS = 20  # Contract A: ~50 Hz
 
 
 # ============================================================================
@@ -40,7 +42,7 @@ class ActivityDetector:
 
         Args:
             window_ms: window size in milliseconds for activity classification
-            stillness_threshold: accel std below this = resting (m/s²)
+            stillness_threshold: accel std below this = resting (g)
         """
         self._window_ms = window_ms
         self._threshold = stillness_threshold
@@ -56,9 +58,9 @@ class ActivityDetector:
         """Process a new accelerometer reading.
 
         Args:
-            ax: x-axis acceleration (m/s²)
-            ay: y-axis acceleration (m/s²)
-            az: z-axis acceleration (m/s²)
+            ax: x-axis acceleration (g)
+            ay: y-axis acceleration (g)
+            az: z-axis acceleration (g)
 
         Returns:
             ActivityOutput with current activity classification

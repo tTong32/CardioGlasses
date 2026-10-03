@@ -27,14 +27,14 @@ MIN_VALID_BEATS = 4  # minimum for HR calculation
 
 # Quality assessment
 QUALITY_FLAT_THRESHOLD = 10.0  # std in sensor counts
-QUALITY_MOVING_PENALTY = 0.5  # multiply quality by this when moving
+QUALITY_MOVING_PENALTY = 0.5  # unused: motion artifacts already lower the measured quality
 QUALITY_CLIPPING_THRESHOLD = 0.05  # fraction of samples at min/max
 
 # Signal status
 SIGNAL_OFFLINE_TIMEOUT_S = 3.0
 
 # Activity detection
-ACTIVITY_ACCEL_THRESHOLD_G = 0.05  # initial threshold
+ACTIVITY_ACCEL_THRESHOLD_G = 0.025  # std of |a| in g: rest ~0.004, synthetic movement 0.047+
 ACTIVITY_HYSTERESIS_COUNT = 2  # consecutive checks to switch state
 ACTIVITY_WINDOW_S = 2.0  # window for computing std
 
@@ -85,8 +85,8 @@ CONFIDENCE_MIN_FOR_ALERT = 0.5  # cap level at monitor if below
 # Explainer (Phase 5)
 # ============================================================================
 
-EXPLAINER_MODEL = "claude-haiku-4-5-20251001"
-EXPLAINER_TIMEOUT_S = 3.0
+EXPLAINER_MODEL = "gemini-flash-lite-latest"  # ~0.7 s; override with GEMINI_MODEL in .env
+EXPLAINER_TIMEOUT_S = 5.0  # wait this long, then send templated wording
 EXPLAINER_MAX_VOICE_WORDS = 25
 EXPLAINER_HR_BUCKET = 5  # bpm, for cache key
 

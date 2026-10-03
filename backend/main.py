@@ -1,5 +1,7 @@
 """CardioGlasses hub: store readings and alerts, serve the dashboard."""
 
+from __future__ import annotations
+
 import asyncio
 import json
 import logging

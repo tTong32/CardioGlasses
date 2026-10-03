@@ -9,6 +9,8 @@ Reports the real sample rate, gaps, bad lines, accelerometer units (g vs m/s^2),
 whether the PPG looks alive. --out writes the Contract A CSV that replay reads.
 """
 
+from __future__ import annotations
+
 import argparse
 import csv
 import json

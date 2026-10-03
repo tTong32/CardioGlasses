@@ -1,5 +1,7 @@
 """S-03: test each external service with one call. Run `python -m backend.check_keys`."""
 
+from __future__ import annotations
+
 import os
 import sys
 from pathlib import Path
@@ -32,7 +34,8 @@ def check_gemini() -> str:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY is not set")
     # Listing models validates the key without using any free-tier quota.
-    names = [model.name for model in genai.Client(api_key=api_key).models.list()]
+    client = genai.Client(api_key=api_key)  # keep a reference: the pager needs it open
+    names = [model.name for model in client.models.list()]
     flash = [name for name in names if "flash" in name]
     return f"key valid, {len(names)} models ({len(flash)} flash)"
 

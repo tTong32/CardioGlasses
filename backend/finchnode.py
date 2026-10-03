@@ -4,6 +4,8 @@ The public demo API needs no key. `patient-demo-polypharmacy` is a 78-year-old w
 atrial fibrillation and heart failure on metoprolol, which fits our high-risk user.
 """
 
+from __future__ import annotations
+
 import os
 from datetime import date
 
