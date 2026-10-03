@@ -9,15 +9,31 @@
   <title>CardioGlasses</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" />
   <style>
+    /* Digits only (U+0030-0039) from the system font: Atkinson's zero is slashed, so "104"
+       would read "1Ø4". Letters keep Atkinson. If none of these exist, Atkinson is used. */
+    @font-face {
+      font-family: "CG Digits"; font-weight: 400 500; unicode-range: U+0030-0039;
+      src: local("Segoe UI"), local("SegoeUI"), local("Roboto"), local("Roboto-Regular"),
+           local("Helvetica Neue"), local("HelveticaNeue"), local("Arial"), local("ArialMT");
+    }
+    @font-face {
+      font-family: "CG Digits"; font-weight: 600 900; unicode-range: U+0030-0039;
+      src: local("Segoe UI Semibold"), local("SegoeUI-Semibold"), local("Roboto Medium"), local("Roboto-Medium"),
+           local("Helvetica Neue Medium"), local("HelveticaNeue-Medium"), local("Arial Bold"), local("Arial-BoldMT");
+    }
+
     /* ---------- Tokens ---------- */
     :root {
       color-scheme: light dark;
 
       /* Numbers use the system font: Atkinson's slashed zero reads as "1Ø4" at hero size. */
       --font-num: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      --font: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      /* Three type roles: a warm serif for what to read first, a hyperlegible sans for
+         everything else, and the system face for numbers. */
+      --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
+      --font: "CG Digits", "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
       /* Warm paper + ink, one accent (deep teal) */
       --bg: #f5f1ea;
@@ -103,7 +119,7 @@
     }
     .brand {
       display: flex; align-items: center; gap: 8px;
-      font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; color: var(--ink);
+      font-family: var(--font-display); font-size: 1.15rem; font-weight: 700; letter-spacing: -0.005em; color: var(--ink);
     }
     .brand svg { color: var(--accent); }
     .conn {
@@ -128,6 +144,18 @@
       border-radius: var(--radius-lg);
       background: var(--tint);
       transition: background-color 0.6s ease;
+      position: relative;
+    }
+    /* A single ring "calls" for attention on notify; escalate repeats it 3 times. */
+    .hero::after {
+      content: ""; position: absolute; inset: 0; border-radius: inherit;
+      border: 2px solid var(--tone); opacity: 0; pointer-events: none;
+    }
+    .hero.calling::after { animation: call 1.1s ease-out 1; }
+    .hero.calling[data-level="escalate"]::after { animation-iteration-count: 3; }
+    @keyframes call {
+      from { opacity: 0.7; transform: scale(1); }
+      to   { opacity: 0;   transform: scale(1.06); }
     }
     .hero[data-level="normal"]   { --tone: var(--normal);   --tint: var(--normal-tint); }
     .hero[data-level="monitor"]  { --tone: var(--monitor);  --tint: var(--monitor-tint); }
@@ -136,7 +164,8 @@
 
     .status {
       display: flex; align-items: center; gap: 10px;
-      font-size: 1.6rem; line-height: 1.2; font-weight: 800; letter-spacing: -0.015em;
+      font-family: var(--font-display);
+      font-size: 1.75rem; line-height: 1.15; font-weight: 700; letter-spacing: -0.01em;
       color: var(--tone);
     }
     .status svg { width: 28px; height: 28px; }
@@ -183,6 +212,12 @@
       background: var(--warn-bg); color: var(--warn-ink);
       font-size: 1rem; font-weight: 600; line-height: 1.4;
     }
+    /* Banners slide in when they appear, so a new problem gets noticed. */
+    .banner:not([hidden]) { animation: banner-in 0.3s ease-out; }
+    @keyframes banner-in {
+      from { opacity: 0; transform: translateY(-6px); }
+      to   { opacity: 1; transform: none; }
+    }
     .banner.bad { background: var(--bad-bg); color: var(--bad-ink); border-left-color: var(--bad-edge); }
     .banner svg { width: 22px; height: 22px; margin-top: 1px; }
 
@@ -201,6 +236,17 @@
       content: ""; position: absolute; left: 0; top: 22px; bottom: 22px; width: 4px;
       border-radius: 0 4px 4px 0; background: var(--tone);
     }
+    /* A new alert rises into place and its level bar draws in: "this just changed". */
+    .message.arrived { animation: arrive 0.4s ease-out; }
+    .message.arrived::before { animation: draw-bar 0.5s 0.15s ease-out backwards; transform-origin: top; }
+    @keyframes arrive {
+      from { opacity: 0.4; transform: translateY(10px); }
+      to   { opacity: 1;   transform: none; }
+    }
+    @keyframes draw-bar {
+      from { transform: scaleY(0); }
+      to   { transform: scaleY(1); }
+    }
     .message[data-level="normal"]   { --tone: var(--normal); }
     .message[data-level="monitor"]  { --tone: var(--monitor); }
     .message[data-level="notify"]   { --tone: var(--notify); }
@@ -209,7 +255,7 @@
       font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
       color: var(--ink-3);
     }
-    #headline { margin-top: 6px; font-size: 1.4rem; line-height: 1.25; font-weight: 700; letter-spacing: -0.01em; }
+    #headline { margin-top: 6px; font-family: var(--font-display); font-size: 1.5rem; line-height: 1.2; font-weight: 600; letter-spacing: -0.005em; }
     #reason { margin-top: 8px; color: var(--ink-2); }
     .next {
       display: flex; align-items: center; gap: 14px;
@@ -548,11 +594,20 @@
       renderWhy(a.reading || state.lastReading, a);
       renderHero();
       if (live) {
+        replay($("alert-card"), "arrived");
+        if (a.level === "notify" || a.level === "escalate") replay($("hero"), "calling");
         state.history.unshift(a);
         state.history = state.history.slice(0, 10);
         renderHistory();
       }
       $("simulate-label").textContent = a.level === "notify" || a.level === "escalate" ? "Test recovery" : "Test alert";
+    }
+
+    // Restart a one-shot CSS animation.
+    function replay(el, cls) {
+      el.classList.remove(cls);
+      void el.offsetWidth;
+      el.classList.add(cls);
     }
 
     function renderHistory() {
