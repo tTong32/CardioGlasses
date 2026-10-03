@@ -67,7 +67,7 @@ def send_imessage(text: str) -> tuple[str, Optional[str]]:
     except (subprocess.TimeoutExpired, ValueError, IndexError) as exc:
         return "imessage_failed", str(exc)
     if result.get("ok"):
-        return "imessage", result.get("guid")
+        return "imessage", result.get("id") or result.get("guid")
     return "imessage_failed", result.get("error") or done.stderr.strip()[:200]
 
 
