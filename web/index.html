@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CardioGlasses</title>
+  <style>
+    :root { color-scheme: dark; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0 auto;
+      max-width: 480px;
+      padding: 16px;
+      font-family: system-ui, sans-serif;
+      background: #0e141b;
+      color: #e8eef4;
+    }
+    h1 { font-size: 1.15rem; margin: 0; }
+    .sub { color: #93a4b5; font-size: 0.85rem; margin: 4px 0 16px; }
+    .hero, .card {
+      background: #18222d;
+      border-radius: 16px;
+      padding: 16px;
+    }
+    .hero { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .hr { font-size: 4.5rem; line-height: 0.9; font-weight: 700; }
+    .unit, .muted { color: #93a4b5; font-size: 1rem; font-weight: 500; }
+    .badge {
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background: #334455;
+    }
+    .badge.normal { background: #1f8a4c; }
+    .badge.monitor { background: #c9a227; color: #111; }
+    .badge.notify { background: #d06a1a; }
+    .badge.escalate { background: #c0392b; }
+    .card { margin-top: 12px; }
+    .card h2 { margin: 0 0 8px; font-size: 1rem; }
+    button {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      border: 0;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 650;
+      background: #d6e4f0;
+      color: #10202c;
+    }
+  </style>
+</head>
+<body>
+  <h1>CardioGlasses</h1>
+  <p class="sub" id="link">Connecting…</p>
+  <section class="hero">
+    <div>
+      <div class="hr"><span id="hr">--</span><span class="unit"> bpm</span></div>
+      <div class="muted" id="meta">No reading yet</div>
+    </div>
+    <div class="badge" id="badge">—</div>
+  </section>
+  <section class="card">
+    <h2>Patient</h2>
+    <p id="patient-line" class="muted">Loading context…</p>
+    <p id="conditions"></p>
+    <p id="medications"></p>
+  </section>
+  <section class="card">
+    <h2 id="headline">Waiting for an alert</h2>
+    <p id="reason" class="muted">Reason will show here.</p>
+    <p><strong>Next:</strong> <span id="next-step">—</span></p>
+  </section>
+  <button type="button" id="simulate">Simulate</button>
+  <script>
+    const MOCK_PATIENT = {
+      patient_id: "demo-1",
+      age: 71,
+      conditions: ["hypertension", "type 2 diabetes"],
+      medications: ["metoprolol", "metformin"],
+      risk_tier: "high"
+    };
+    const MOCK_READING = {
+      t: 1760000002000, hr: 72, activity: "resting", quality: 0.9,
+      baseline_hr: 68, deviation: 0.4, persist_s: 12
+    };
+    const MOCK_ALERT = {
+      level: "normal",
+      headline: "Within your baseline",
+      reason: "Heart rate is close to your usual resting rate.",
+      next_step: "No action needed"
+    };
+    let live = false;
+
+    function renderReading(r) {
+      document.getElementById("hr").textContent = r.hr == null ? "--" : String(Math.round(r.hr));
+      const bits = [];
+      if (r.activity) bits.push(r.activity);
+      if (r.quality != null) bits.push("quality " + Number(r.quality).toFixed(2));
+      document.getElementById("meta").textContent = bits.join(" · ") || "No reading yet";
+    }
+
+    function renderAlert(a) {
+      const badge = document.getElementById("badge");
+      badge.textContent = a.level || "—";
+      badge.className = "badge" + (a.level ? " " + a.level : "");
+      document.getElementById("headline").textContent = a.headline || "Alert";
+      document.getElementById("reason").textContent = a.reason || "";
+      document.getElementById("next-step").textContent = a.next_step || "—";
+    }
+
+    function renderPatient(p) {
+      document.getElementById("patient-line").textContent =
+        p.patient_id + " · age " + p.age + " · " + p.risk_tier + " risk";
+      document.getElementById("conditions").textContent = "Conditions: " + (p.conditions || []).join(", ");
+      document.getElementById("medications").textContent = "Medications: " + (p.medications || []).join(", ");
+    }
+
+    function showMock(message) {
+      if (live) return;
+      document.getElementById("link").textContent = message;
+      renderPatient(MOCK_PATIENT);
+      renderReading(MOCK_READING);
+      renderAlert(MOCK_ALERT);
+    }
+
+    async function loadPatient() {
+      try {
+        const res = await fetch("/patient");
+        if (!res.ok) throw new Error(String(res.status));
+        renderPatient(await res.json());
+      } catch (err) {
+        renderPatient(MOCK_PATIENT);
+      }
+    }
+
+    function connect() {
+      if (!location.host) {
+        showMock("Offline — showing mock data");
+        return;
+      }
+      let socket;
+      try {
+        const proto = location.protocol === "https:" ? "wss" : "ws";
+        socket = new WebSocket(proto + "://" + location.host + "/ws");
+      } catch (err) {
+        showMock("Offline — showing mock data");
+        return;
+      }
+      const timer = setTimeout(function () {
+        showMock("WebSocket unavailable — showing mock data");
+        try { socket.close(); } catch (err) {}
+      }, 2500);
+      socket.onopen = function () {
+        live = true;
+        clearTimeout(timer);
+        document.getElementById("link").textContent = "Live";
+      };
+      socket.onmessage = function (event) {
+        let msg;
+        try { msg = JSON.parse(event.data); } catch (err) { return; }
+        if (msg.type === "reading" && msg.data) renderReading(msg.data);
+        if (msg.type === "alert" && msg.data) renderAlert(msg.data);
+      };
+      socket.onerror = function () {
+        clearTimeout(timer);
+        showMock("WebSocket unavailable — showing mock data");
+      };
+    }
+
+    document.getElementById("simulate").addEventListener("click", function () {
+      const reading = {
+        t: Date.now(), hr: 104, ibi_ms: [580, 570, 590], activity: "resting",
+        quality: 0.86, baseline_hr: 68, deviation: 2.6, persist_s: 48
+      };
+      renderReading(reading);
+      renderAlert({
+        level: "notify",
+        headline: "Elevated heart rate at rest",
+        reason: "Heart rate has stayed high while resting, compared with your baseline and history.",
+        next_step: "Sit down and review",
+        reading: reading
+      });
+      document.getElementById("link").textContent = live ? "Live · simulated locally" : "Simulated locally";
+    });
+
+    loadPatient();
+    connect();
+  </script>
+</body>
+</html>
