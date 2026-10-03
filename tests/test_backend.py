@@ -128,6 +128,40 @@ def test_patient_falls_back_to_cache_then_local(app_env, monkeypatch):
         PatientContext.model_validate(client.get("/patient").json())
 
 
+def test_record_shapes_thresholds_and_status(app_env, monkeypatch):
+    finchnode_ok(monkeypatch)  # AF + heart failure, age 78 -> high risk
+    with TestClient(main.app) as client:
+        config = client.get("/patient").json()["config"]
+        assert (config["deviation_trigger"], config["persist_s"]) == (2.0, 30.0)
+        effects = client.get("/status").json()["record_effects"]
+        assert effects[0].startswith("High risk:")
+        assert any(line.startswith("Atrial fibrillation:") for line in effects)
+        assert any(line.startswith("On metoprolol:") for line in effects)
+
+
+def test_lower_risk_record_needs_more_evidence(app_env, monkeypatch):
+    medium = {
+        "id": "patient-demo-001",
+        "data": {
+            "demographics": {"birthDate": "1975-01-01"},
+            "conditions": [{"name": "Essential hypertension", "status": "active"}],
+            "medications": [],
+        },
+    }
+    monkeypatch.setattr(
+        finchnode, "fetch_patient_context",
+        lambda config: finchnode.to_patient_context(medium, config, today=date(2026, 10, 3)),
+    )
+    with TestClient(main.app) as client:
+        patient = client.get("/patient").json()
+        assert patient["risk_tier"] == "medium"
+        assert (patient["config"]["deviation_trigger"], patient["config"]["persist_s"]) == (2.5, 45.0)
+        # A cached record keeps its tier's thresholds when FinchNode is down.
+    finchnode_down(monkeypatch)
+    with TestClient(main.app) as client:
+        assert client.get("/patient").json()["config"]["persist_s"] == 45.0
+
+
 def test_finchnode_can_be_disabled(app_env, monkeypatch):
     monkeypatch.setenv("FINCHNODE_ENABLED", "0")
     finchnode_ok(monkeypatch)

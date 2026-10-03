@@ -13,6 +13,7 @@ C — AI → Software, `Alert`, only on state change
 
 D — Software → AI, `PatientContext`, loaded at start
 {"patient_id": "demo-1", "age": 71, "conditions": ["…"], "medications": ["…"], "risk_tier": "high", "config": {"min_quality": 0.6, "persist_s": 30, "deviation_trigger": 2.0, "cooldown_s": 120}}
+(Shape unchanged. The backend fills `deviation_trigger` and `persist_s` from `risk_tier`: high 2.0 / 30 s, medium 2.5 / 45 s, low 3.0 / 60 s. The AI also reads `conditions` (irregular-rhythm mode for atrial fibrillation) and `medications`; see `ai/clinical.py`.)
 
 Rules:
 - unknown/missing values = null, never omitted

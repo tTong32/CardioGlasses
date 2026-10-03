@@ -42,6 +42,7 @@ def _generate_beat_times(
     duration_s: float,
     hr_curve_fn,
     seed: int,
+    jitter_percent: Optional[float] = None,
 ) -> list[float]:
     """
     Generate beat times with HRV jitter.
@@ -56,7 +57,7 @@ def _generate_beat_times(
         hr_bpm = hr_curve_fn(t)
         mean_ibi_s = 60.0 / hr_bpm
         # Add 3% jitter
-        jitter = rng.gauss(1.0, cfg.HRV_JITTER_PERCENT / 100.0)
+        jitter = rng.gauss(1.0, (cfg.HRV_JITTER_PERCENT if jitter_percent is None else jitter_percent) / 100.0)
         ibi_s = mean_ibi_s * jitter
         t += ibi_s
         if t < duration_s:
@@ -188,12 +189,14 @@ def _generate_imu_signal(
 class Scenario:
     """A named test scenario with HR and motion curves."""
 
-    def __init__(self, name: str, duration_s: float, hr_fn, motion_fn=None, seed: int = 42):
+    def __init__(self, name: str, duration_s: float, hr_fn, motion_fn=None, seed: int = 42,
+                 jitter_percent: Optional[float] = None):
         self.name = name
         self.duration_s = duration_s
         self.hr_fn = hr_fn
         self.motion_fn = motion_fn or (lambda t: 0.0)
         self.seed = seed
+        self.jitter_percent = jitter_percent  # beat-to-beat variation; ~18% mimics atrial fibrillation
 
 
 def _constant_hr(bpm: float):
@@ -295,6 +298,21 @@ SCENARIOS = {
         seed=7,
     ),
 
+    # Same story as elevated_rest, but with an irregular (atrial fibrillation-like) rhythm.
+    "af_elevated_rest": Scenario(
+        name="af_elevated_rest",
+        duration_s=360,
+        hr_fn=_piecewise(
+            (90, _constant_hr(76)),
+            (110, _linear_ramp(90, 110, 76, 112)),
+            (250, _constant_hr(112)),
+            (280, _linear_ramp(250, 280, 112, 78)),
+            (360, _constant_hr(78)),
+        ),
+        seed=8,
+        jitter_percent=18.0,
+    ),
+
     "noisy": Scenario(
         name="noisy",
         duration_s=120,
@@ -327,7 +345,7 @@ def generate_scenario(scenario: Scenario, add_noise_artifacts: bool = False) -> 
     rng = random.Random(scenario.seed)
 
     # Generate beat times
-    beat_times = _generate_beat_times(scenario.duration_s, scenario.hr_fn, scenario.seed)
+    beat_times = _generate_beat_times(scenario.duration_s, scenario.hr_fn, scenario.seed, scenario.jitter_percent)
 
     # Generate PPG
     ppg = _generate_ppg_signal(

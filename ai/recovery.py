@@ -185,6 +185,7 @@ class RecoveryModel:
         self._peak_hr: float = 0.0
         self._recovery_start_ms: Optional[int] = None
         self._hr0: Optional[float] = None
+        self._hr0_estimate: Optional[float] = None  # from around the stop; refined by the first recovery HR
         self._baseline: Optional[float] = None
         self._baseline_std: Optional[float] = None
 
@@ -346,10 +347,11 @@ class RecoveryModel:
                     hr0_readings = [h for t, h, a in self._episode_data
                                    if abs(t - t_ms) <= window_ms and h is not None]
 
-                    if hr0_readings:
-                        self._hr0 = np.median(hr0_readings)
-                    else:
-                        self._hr0 = self._peak_hr  # fallback
+                    # HR0 is settled by the first clean recovery reading (see _handle_active).
+                    # Motion often corrupts HR at the stop itself, and the readings or peak
+                    # from just before it can sit below the HR seen just after stopping.
+                    self._hr0 = None
+                    self._hr0_estimate = float(np.median(hr0_readings)) if hr0_readings else self._peak_hr
 
             # Reset moving tracker
             self._moving_start_ms = None
@@ -364,6 +366,10 @@ class RecoveryModel:
             self._state = "aborted"
             self._last_verdict = None
             return RecoveryOutput(episode_state="aborted")
+
+        if self._hr0 is None and hr is not None:
+            # A decay can't start below its own first point.
+            self._hr0 = max(self._hr0_estimate or 0.0, hr)
 
         # Add recovery reading
         if hr is not None and self._recovery_start_ms is not None:

@@ -41,12 +41,21 @@ def windows(name: str, step: int = 100, size: int = 500):
         yield win, truth, moving
 
 
+SINUS = CONTEXT.model_copy(update={"conditions": ["Heart failure", "Hypothyroidism"]})  # no AF on record
+
+
 def run(name: str, context: PatientContext = CONTEXT) -> list:
     return list(Pipeline(context).run(scenario(name)))
 
 
-def alert_levels(name: str) -> list[str]:
-    return [step.alert.level for step in run(name) if step.alert is not None]
+def alert_levels(name: str, context: PatientContext = CONTEXT) -> list[str]:
+    return [step.alert.level for step in run(name, context) if step.alert is not None]
+
+
+def af_rhythm(seed: int = 12, jitter: float = 18.0) -> list[Sample]:
+    from ai.replay import Scenario, _constant_hr
+
+    return generate_scenario(Scenario("af", 60, _constant_hr(80), seed=seed, jitter_percent=jitter))
 
 
 def reading(**overrides) -> Reading:
@@ -93,6 +102,22 @@ def test_ibis_match_heart_rate():
     win, truth, _ = next(windows("rest"))
     result = analyze_ppg(win)
     assert 60000 / np.median(result.ibi_ms) == pytest.approx(truth, abs=3)
+
+
+def test_irregular_mode_trusts_an_af_rhythm():
+    samples = af_rhythm()
+    wins = [samples[e - 500:e] for e in range(500, len(samples) + 1, 100)]
+    normal = np.mean([analyze_ppg(w).quality >= 0.6 for w in wins])
+    irregular = np.mean([analyze_ppg(w, irregular_rhythm=True).quality >= 0.6 for w in wins])
+    assert irregular >= 0.9 and irregular > normal
+
+
+def test_irregular_mode_still_rejects_noise():
+    assert all(analyze_ppg(win, irregular_rhythm=True).quality < 0.6 for win, _, _ in windows("noisy"))
+    rng = np.random.default_rng(3)
+    noisy_af = [s.model_copy(update={"ppg": int(s.ppg + rng.normal(0, 600))}) for s in af_rhythm(seed=13)]
+    wins = [noisy_af[e - 500:e] for e in range(500, len(noisy_af) + 1, 100)]
+    assert np.mean([analyze_ppg(w, irregular_rhythm=True).quality >= 0.6 for w in wins]) < 0.1
 
 
 def test_stateless_activity():
@@ -149,6 +174,14 @@ def test_slow_recovery_alerts(verdict, level):
     alert = engine.update(reading(persist_s=5), Context(recovering=True, live_verdict=verdict))
     assert alert.level == level
     assert alert.headline in ("Slower recovery than usual", "Heart rate slow to settle")
+
+
+def test_untrusted_reading_does_not_restart_the_normal_timer():
+    engine = DecisionEngine(CONTEXT)
+    engine.update(reading(t=0, persist_s=30))
+    engine.update(reading(t=2_000, deviation=0.5))
+    engine.update(reading(t=10_000, deviation=0.5, quality=0.3, signal_status="poor"))  # no evidence
+    assert engine.update(reading(t=22_000, deviation=0.5)).level == "normal"
 
 
 def test_return_to_normal_needs_20s_and_then_cools_down():
@@ -259,12 +292,49 @@ def test_templates_cover_every_level_and_kind():
         ("noisy", []),
         ("normal_recovery", []),
         ("elevated_rest", ["monitor", "notify", "escalate", "normal"]),
+        ("af_elevated_rest", ["monitor", "notify", "escalate", "normal"]),
+        # AF on record widens the baseline floor to 6 bpm, so these stop short of escalate.
+        ("slow_recovery", ["notify"]),
+        ("calibration_then_slow", ["notify"]),
+    ],
+)
+def test_scenario_alerts_af_patient(name, expected):
+    assert alert_levels(name) == expected
+
+
+@pytest.mark.parametrize(
+    ("name", "expected"),
+    [
+        ("rest", []),
+        ("normal_recovery", []),
+        ("elevated_rest", ["monitor", "notify", "escalate", "normal"]),
         ("slow_recovery", ["notify", "escalate"]),
         ("calibration_then_slow", ["notify", "escalate"]),
     ],
 )
-def test_scenario_alerts(name, expected):
-    assert alert_levels(name) == expected
+def test_scenario_alerts_sinus_patient(name, expected):
+    assert alert_levels(name, SINUS) == expected
+
+
+def test_af_record_keeps_an_af_rhythm_trusted():
+    def trusted(steps):
+        return sum(s.reading.signal_status == "ok" for s in steps) / len(steps)
+
+    assert trusted(run("af_elevated_rest", CONTEXT)) > 0.85
+    assert trusted(run("af_elevated_rest", SINUS)) < 0.6
+    assert alert_levels("af_elevated_rest", SINUS) != ["monitor", "notify", "escalate", "normal"]
+
+
+def test_slow_recovery_is_named_and_fit_is_close():
+    steps = run("slow_recovery", SINUS)
+    assert next(s.alert for s in steps if s.alert).headline == "Heart rate slow to settle"
+    taus = [s.reading.recovery_tau_s for s in steps if s.reading.recovery_tau_s]
+    assert 100 < taus[-1] < 220  # true tau is 150 s
+
+
+def test_normal_recovery_fit_is_close():
+    taus = [s.reading.recovery_tau_s for s in run("normal_recovery", SINUS) if s.reading.recovery_tau_s]
+    assert taus and 20 < taus[-1] < 50  # true tau is 30 s
 
 
 def test_every_reading_is_a_valid_contract_b():

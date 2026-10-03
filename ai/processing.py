@@ -22,6 +22,15 @@ Activity = Literal["resting", "moving"]
 MIN_WINDOW_S = 6.0  # shorter windows don't hold enough beats for a stable HR
 MAX_MISSING_FRACTION = 0.2  # more null/absent PPG than this -> no estimate
 SPECTRAL_HALF_WIDTH_HZ = 0.15  # band around the HR fundamental and its harmonic
+# Irregular-rhythm mode (e.g. atrial fibrillation in the patient record): beat-to-beat
+# variation is the rhythm itself, not noise, so it isn't held against quality.
+IRREGULAR_IBI_OUTLIER = 0.5  # vs 0.30: wider band before a gap counts as a missed/extra beat
+IRREGULAR_SPECTRAL_HALF_WIDTH_HZ = 0.3  # the HR peak smears out when beats are irregular
+# Without the timing check, noise peaks could pass as beats. Real pulses keep a similar
+# height (pulse-height CV ~0.13 on irregular synthetic rhythm, 0.3+ once noise adds peaks),
+# so in this mode a ragged pulse height lowers quality instead.
+IRREGULAR_HEIGHT_CV_OK = 0.15
+IRREGULAR_HEIGHT_CV_SPAN = 0.15
 # Below this quality the HR is withheld (null). On synthetic data with added noise, windows
 # at quality >= 0.3 were always within 5 bpm of truth; below it, 91% were off by > 5 bpm.
 HR_MIN_QUALITY = 0.3
@@ -41,16 +50,16 @@ def _sample_rate(t_ms: np.ndarray) -> Optional[float]:
     return (len(t_ms) - 1) / span_s if span_s > 0 else None
 
 
-def _clean_ibis(ibis: np.ndarray) -> np.ndarray:
+def _clean_ibis(ibis: np.ndarray, outlier: float = cfg.IBI_OUTLIER_THRESHOLD) -> np.ndarray:
     """Drop physiologically impossible gaps, then gaps far from the median (missed/extra beats)."""
     ibis = ibis[(ibis >= cfg.IBI_MIN_MS) & (ibis <= cfg.IBI_MAX_MS)]
     if len(ibis) == 0:
         return ibis
     median = np.median(ibis)
-    return ibis[np.abs(ibis - median) <= cfg.IBI_OUTLIER_THRESHOLD * median]
+    return ibis[np.abs(ibis - median) <= outlier * median]
 
 
-def _spectral_concentration(x: np.ndarray, fs: float, hr_hz: float) -> float:
+def _spectral_concentration(x: np.ndarray, fs: float, hr_hz: float, half_width: float = SPECTRAL_HALF_WIDTH_HZ) -> float:
     """Share of 0.5-4 Hz power that sits at the HR fundamental and first harmonic."""
     nperseg = min(len(x), int(fs * 8))
     freqs, power = welch(x, fs=fs, nperseg=nperseg)
@@ -60,12 +69,17 @@ def _spectral_concentration(x: np.ndarray, fs: float, hr_hz: float) -> float:
         return 0.0
     near = np.zeros_like(band)
     for harmonic in (hr_hz, 2 * hr_hz):
-        near |= np.abs(freqs - harmonic) <= SPECTRAL_HALF_WIDTH_HZ
+        near |= np.abs(freqs - harmonic) <= half_width
     return float(power[band & near].sum() / total)
 
 
-def analyze_ppg(samples: list[Sample]) -> PpgResult:
-    """HR, beat intervals, and a 0-1 quality score for one window of samples."""
+def analyze_ppg(samples: list[Sample], irregular_rhythm: bool = False) -> PpgResult:
+    """HR, beat intervals, and a 0-1 quality score for one window of samples.
+
+    irregular_rhythm: the wearer's record says their rhythm is irregular (e.g. atrial
+    fibrillation). Beat-to-beat variation then doesn't lower quality, and HR is the mean
+    rate over the window rather than the median beat.
+    """
     points = [(s.t, s.ppg) for s in samples if s.ppg is not None]
     if len(samples) < 2 or len(points) < (1 - MAX_MISSING_FRACTION) * len(samples):
         return PpgResult(reason="too many missing PPG samples")
@@ -83,7 +97,7 @@ def analyze_ppg(samples: list[Sample]) -> PpgResult:
     b, a = butter(cfg.BANDPASS_ORDER, [cfg.BANDPASS_LOW_HZ / nyquist, high / nyquist], btype="band")
     x = filtfilt(b, a, raw - np.mean(raw))
 
-    peaks, _ = find_peaks(
+    peaks, props = find_peaks(
         x,
         distance=max(1, int(cfg.PEAK_MIN_DISTANCE_S * fs)),
         prominence=cfg.PEAK_PROMINENCE_FACTOR * np.std(x),
@@ -91,15 +105,21 @@ def analyze_ppg(samples: list[Sample]) -> PpgResult:
     if len(peaks) < 2:
         return PpgResult(n_beats=len(peaks), reason="no clear beats")
     raw_ibis = np.diff(t_ms[peaks])
-    ibis = _clean_ibis(raw_ibis)
+    ibis = _clean_ibis(raw_ibis, IRREGULAR_IBI_OUTLIER if irregular_rhythm else cfg.IBI_OUTLIER_THRESHOLD)
     if len(ibis) + 1 < cfg.MIN_VALID_BEATS:
         return PpgResult(n_beats=len(peaks), reason="too few regular beats")
 
-    hr = 60000.0 / float(np.median(ibis))
+    hr = 60000.0 / float(np.mean(ibis) if irregular_rhythm else np.median(ibis))
     kept = len(ibis) / len(raw_ibis)
     cv = float(np.std(ibis) / np.mean(ibis))
-    regularity = float(np.clip(1 - (cv - 0.06) / 0.20, 0, 1))
-    periodicity = float(np.clip((_spectral_concentration(x, fs, hr / 60) - 0.25) / 0.35, 0, 1))
+    if irregular_rhythm:
+        heights = props["prominences"]
+        height_cv = float(np.std(heights) / np.mean(heights))
+        regularity = float(np.clip(1 - (height_cv - IRREGULAR_HEIGHT_CV_OK) / IRREGULAR_HEIGHT_CV_SPAN, 0, 1))
+    else:
+        regularity = float(np.clip(1 - (cv - 0.06) / 0.20, 0, 1))
+    half_width = IRREGULAR_SPECTRAL_HALF_WIDTH_HZ if irregular_rhythm else SPECTRAL_HALF_WIDTH_HZ
+    periodicity = float(np.clip((_spectral_concentration(x, fs, hr / 60, half_width) - 0.25) / 0.35, 0, 1))
     clip_factor = float(np.clip(1 - clipped / cfg.QUALITY_CLIPPING_THRESHOLD, 0, 1)) if clipped > 0 else 1.0
     quality = round(periodicity * min(regularity, kept) * clip_factor, 2)
 
@@ -107,7 +127,7 @@ def analyze_ppg(samples: list[Sample]) -> PpgResult:
     if periodicity < 0.6:
         reasons.append("weak pulse rhythm")
     if regularity < 0.6:
-        reasons.append("irregular beat timing")
+        reasons.append("uneven pulse height" if irregular_rhythm else "irregular beat timing")
     if kept < 0.8:
         reasons.append("missed or extra beats")
     if clip_factor < 1:

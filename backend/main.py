@@ -18,6 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from ai import clinical
 from ai.contracts import Alert, PatientContext, Reading
 from backend import finchnode, voice
 
@@ -48,10 +49,15 @@ FALLBACK_PATIENT = {
 
 
 def local_patient() -> PatientContext:
-    """The checked-in patient (or the hardcoded one). Its config holds our thresholds."""
+    """The checked-in patient (or the hardcoded one). Its config holds the base thresholds."""
     if PATIENT_PATH.is_file():
         return PatientContext.model_validate_json(PATIENT_PATH.read_text(encoding="utf-8"))
     return PatientContext.model_validate(FALLBACK_PATIENT)
+
+
+def with_record_config(context: PatientContext, base: PatientContext) -> PatientContext:
+    """Contract D thresholds: the base file's settings, tuned to this record's risk tier."""
+    return context.model_copy(update={"config": clinical.tuned_config(base.config, context.risk_tier)})
 
 
 class PatientState:
@@ -66,10 +72,10 @@ class PatientState:
     def load(self) -> None:
         local = local_patient()
         if os.environ.get("FINCHNODE_ENABLED", "1") == "0":
-            self.context, self.source, self.error = local, "local", "FinchNode disabled"
+            self.context, self.source, self.error = with_record_config(local, local), "local", "FinchNode disabled"
         else:
             try:
-                self.context = finchnode.fetch_patient_context(local.config)
+                self.context = with_record_config(finchnode.fetch_patient_context(local.config), local)
                 self.source, self.error = "finchnode", None
                 PATIENT_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
                 PATIENT_CACHE_PATH.write_text(self.context.model_dump_json(indent=2), encoding="utf-8")
@@ -80,7 +86,7 @@ class PatientState:
                 if cached is not None:
                     self.context, self.source = cached, "cache"
                 else:
-                    self.context, self.source = local, "local"
+                    self.context, self.source = with_record_config(local, local), "local"
         self.loaded_at = time.time()
 
     @staticmethod
@@ -91,8 +97,8 @@ class PatientState:
             cached = PatientContext.model_validate_json(PATIENT_CACHE_PATH.read_text(encoding="utf-8"))
         except ValueError:
             return None
-        # Thresholds always come from the local file, even for a cached record.
-        return cached.model_copy(update={"config": local.config})
+        # Thresholds always come from the local file (tuned by tier), even for a cached record.
+        return with_record_config(cached, local)
 
 
 patient = PatientState()
@@ -256,6 +262,7 @@ def status() -> dict:
         "patient_source": patient.source,
         "patient_error": patient.error,
         "patient_loaded_at": int(patient.loaded_at * 1000),
+        "record_effects": clinical.effects(patient.context),
         "voice_configured": voice.is_configured(),
         "fallback_audio_levels": fallbacks,
     }

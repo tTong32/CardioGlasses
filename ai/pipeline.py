@@ -26,6 +26,7 @@ from dotenv import load_dotenv
 import ai.config as cfg
 from ai.activity import ActivityDetector
 from ai.baseline import BaselineTracker
+from ai.clinical import baseline_min_std, irregular_rhythm_expected, tuned_config
 from ai.contracts import Alert, PatientContext, Reading, Sample
 from ai.decision import POST_EXERTION_GRACE_S, Context, DecisionEngine
 from ai.explainer import Explainer
@@ -38,6 +39,9 @@ load_dotenv(ROOT / ".env")
 CUTOFFS_PATH = ROOT / "ai" / "model" / "recovery_cutoffs.json"
 STEP_S = 2.0
 MIN_WINDOW_S = 6.0  # no Readings until the window holds this much data
+# A low-quality window is no evidence either way: persistence holds through it and only
+# resets after this long without a trusted reading.
+EVIDENCE_HOLD_S = 10.0
 
 log = logging.getLogger(__name__)
 
@@ -58,12 +62,15 @@ class Pipeline:
         self.baseline = BaselineTracker()
         self.recovery = RecoveryModel(cutoffs_path=str(CUTOFFS_PATH), medications=context.medications)
         self.engine = DecisionEngine(context, explainer)
+        self.irregular_rhythm = irregular_rhythm_expected(context)
+        self.min_std = baseline_min_std(context)
         self._next_emit_ms: Optional[int] = None
         self._last_emit_ms: Optional[int] = None
         self._last_sample_ms: Optional[int] = None
         self._last_moving_ms: Optional[int] = None
         self._accel_seen = False
         self._persist_s = 0.0
+        self._untrusted_since_ms: Optional[int] = None
         self._shown_recovery = RecoveryOutput()
 
     def push(self, sample: Sample) -> Optional[Step]:
@@ -97,7 +104,7 @@ class Pipeline:
     def _emit(self, t: int) -> Step:
         cfg_p = self.context.config
         window = list(self.window)
-        ppg = analyze_ppg(window)
+        ppg = analyze_ppg(window, irregular_rhythm=self.irregular_rhythm)
         activity = self.activity.current_activity if self._accel_seen else classify_activity(window)
         if activity == "moving":
             self._last_moving_ms = t
@@ -115,9 +122,11 @@ class Pipeline:
         base_hr, base_sd = self.baseline.baseline_hr, self.baseline.baseline_std
         deviation = None
         if hr is not None and base_hr is not None:
-            deviation = (hr - base_hr) / max(base_sd or 0.0, cfg.BASELINE_MIN_STD)
+            deviation = (hr - base_hr) / max(base_sd or 0.0, self.min_std)
 
-        rec = self.recovery.update(t, hr if trusted else None, activity or "resting", base_hr, base_sd)
+        # HR is already withheld below HR_MIN_QUALITY (where it stops being accurate), so the
+        # recovery model gets it even when motion keeps quality under min_quality.
+        rec = self.recovery.update(t, hr, activity or "resting", base_hr, base_sd)
         recovering = rec.episode_state == "active"
         if rec.recovery_tau_s is not None:
             self._shown_recovery = rec
@@ -137,10 +146,16 @@ class Pipeline:
 
         step_s = STEP_S if self._last_emit_ms is None else (t - self._last_emit_ms) / 1000.0
         self._last_emit_ms = t
-        if trusted and activity == "resting" and deviation is not None and deviation >= cfg_p.deviation_trigger:
-            self._persist_s += step_s
-        else:
-            self._persist_s = 0.0
+        if activity == "moving":
+            self._persist_s, self._untrusted_since_ms = 0.0, None
+        elif trusted and deviation is not None:
+            self._untrusted_since_ms = None
+            self._persist_s = self._persist_s + step_s if deviation >= cfg_p.deviation_trigger else 0.0
+        else:  # resting but no trustworthy evidence: hold, unless it has gone on too long
+            if self._untrusted_since_ms is None:
+                self._untrusted_since_ms = t
+            if (t - self._untrusted_since_ms) / 1000.0 > EVIDENCE_HOLD_S:
+                self._persist_s = 0.0
 
         shown = self._shown_recovery
         reading = Reading(
@@ -193,10 +208,8 @@ def offline_context() -> PatientContext:
     """The last FinchNode patient the backend cached, else the checked-in demo patient."""
     local = PatientContext.model_validate_json((ROOT / "data" / "patient.json").read_text(encoding="utf-8"))
     cached = ROOT / "data" / "finchnode_cache.json"
-    if cached.is_file():
-        record = PatientContext.model_validate_json(cached.read_text(encoding="utf-8"))
-        return record.model_copy(update={"config": local.config})
-    return local
+    record = PatientContext.model_validate_json(cached.read_text(encoding="utf-8")) if cached.is_file() else local
+    return record.model_copy(update={"config": tuned_config(local.config, record.risk_tier)})
 
 
 def load_samples(csv_path: Optional[str], scenario: Optional[str]) -> list[Sample]:

@@ -25,6 +25,7 @@ import ai.config as cfg
 from ai.contracts import Alert, Level, PatientContext, Reading
 
 POST_EXERTION_GRACE_S = 60.0
+EVIDENCE_HOLD_S = 10.0  # the return-to-normal timer survives untrusted readings this long
 MONITOR_AFTER_S = 10.0
 ESCALATE_PERSIST_MULTIPLIER = 3.0
 SEVERITY = {"normal": 0, "monitor": 1, "notify": 2, "escalate": 3}
@@ -55,6 +56,7 @@ class DecisionEngine:
         self._episode_peak = 0  # highest severity since the last return to normal
         self._cooldown_until: Optional[int] = None
         self._cooldown_cap = 0
+        self._last_evidence_t: Optional[int] = None
         self.last_kind: Optional[str] = None
 
     def trusted(self, reading: Reading) -> bool:
@@ -107,9 +109,15 @@ class DecisionEngine:
     def update(self, reading: Reading, extra: Optional[Context] = None) -> Optional[Alert]:
         """Feed one Reading. Returns an Alert only when the level changes."""
         extra = extra or Context()
+        evidence = self.trusted(reading) and reading.activity == "resting" and reading.deviation is not None
+        if evidence:
+            self._last_evidence_t = reading.t
+        elif self._last_evidence_t is None or (reading.t - self._last_evidence_t) / 1000.0 > EVIDENCE_HOLD_S:
+            self._normal_since = None  # too long without evidence: start the count again
         target = self._target(reading, extra)
         if target is None:
-            self._normal_since = None
+            if evidence:
+                self._normal_since = None  # trusted but between normal and elevated
             return None
 
         if target.level == "normal":

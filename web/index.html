@@ -310,6 +310,9 @@
     #patient-line { font-weight: 600; }
     #conditions { margin-top: 6px; color: var(--ink); }
     #medications { margin-top: 6px; font-size: 0.95rem; color: var(--ink-2); }
+    .effects-title { margin-top: 16px; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+    ul.effects { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+    ul.effects li { padding-left: 14px; border-left: 3px solid var(--accent); font-size: 0.95rem; color: var(--ink); }
 
     ul.history { list-style: none; margin: 0; padding: 0; }
     ul.history li { padding: 12px 0; border-top: 1px solid var(--rule); }
@@ -455,6 +458,8 @@
           <div class="panel">
             <p id="conditions"></p>
             <p id="medications"></p>
+            <p class="effects-title" id="effects-title" hidden>How your record shapes monitoring</p>
+            <ul class="effects" id="record-effects"></ul>
           </div>
         </details>
       </div>
@@ -707,6 +712,14 @@
       } else {
         banner.hidden = true;
       }
+      const list = $("record-effects");
+      list.replaceChildren();
+      for (const text of s.record_effects || []) {
+        const li = document.createElement("li");
+        li.textContent = text;
+        list.append(li);
+      }
+      $("effects-title").hidden = !(s.record_effects || []).length;
     }
 
     async function getJSON(path) {
@@ -786,7 +799,13 @@
     function showMock(message) {
       state.mock = true;
       setLink(message, "warn");
-      renderStatus({ patient_source: "mock" });
+      renderStatus({
+        patient_source: "mock",
+        record_effects: [
+          "High risk: alerts if your resting heart rate stays 8+ bpm above your usual for 30 seconds.",
+          "On metoprolol: recovery after activity is compared with people on similar medication."
+        ]
+      });
       renderPatient(MOCK_PATIENT);
       renderReading(MOCK_READING);
     }
