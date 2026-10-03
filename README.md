@@ -50,6 +50,25 @@ The patient comes from the FinchNode demo API (`patient-demo-polypharmacy`, no k
 
 Run the tests with `python -m pytest`.
 
+### Demo simulator
+
+Stands in for the AI pipeline: posts scripted Readings and Alerts to the running backend so you can rehearse the dashboard and voice, or fall back to it on demo day.
+
+```bash
+python -m tools.demo_sim --list                      # elevated, escalate, poor-signal, dropout, normal
+python -m tools.demo_sim                             # rest -> exertion -> monitor -> notify -> recovery (~4 min)
+python -m tools.demo_sim --scenario poor-signal --speed 3
+```
+
+### Serial checker (hardware)
+
+Checks the glasses' USB stream against Contract A (rate, gaps, bad lines, g vs m/s², flat PPG) and can record it for replay.
+
+```bash
+python -m tools.serial_check --list
+python -m tools.serial_check --port COM5 --seconds 120 --out data/rec_rest.csv
+```
+
 `python -m ai.replay --generate` rewrites `data/sample_rest.csv` and `data/sample_elevated.csv`. `python -m ai.pipeline data/sample_rest.csv --speedup 10` posts readings to the backend; the signal-processing stubs still return null.
 
 ## Git workflow

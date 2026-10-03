@@ -2,126 +2,429 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f5f1ea" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#121615" media="(prefers-color-scheme: dark)" />
   <title>CardioGlasses</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&display=swap" />
   <style>
-    :root { color-scheme: dark; }
-    * { box-sizing: border-box; }
+    /* ---------- Tokens ---------- */
+    :root {
+      color-scheme: light dark;
+
+      /* Numbers use the system font: Atkinson's slashed zero reads as "1Ø4" at hero size. */
+      --font-num: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+      /* Warm paper + ink, one accent (deep teal) */
+      --bg: #f5f1ea;
+      --surface: #fffdf9;
+      --ink: #1c2422;
+      --ink-2: #4c5753;
+      --ink-3: #6b7570;
+      --rule: #e4ddd1;
+      --rule-strong: #d3cabb;
+      --accent: #1d5f58;
+      --accent-ink: #ffffff;
+      --accent-soft: #e2eeeb;
+      --focus: #1d5f58;
+      --shadow: 0 1px 2px rgba(60, 45, 20, 0.06), 0 8px 24px -12px rgba(60, 45, 20, 0.18);
+
+      /* Levels: text-safe tone + soft tint */
+      --normal: #22695a;    --normal-tint: #e3efe9;
+      --monitor: #8a5a00;   --monitor-tint: #f5ead3;
+      --notify: #a4461a;    --notify-tint: #f7e3d6;
+      --escalate: #a52520;  --escalate-tint: #f8dcd8;
+      --neutral: #5d6864;   --neutral-tint: #ebe6dd;
+
+      --warn-bg: #f6ecd6;   --warn-ink: #6b4600;  --warn-edge: #c9952e;
+      --bad-bg: #f8e0dc;    --bad-ink: #8a1f1a;   --bad-edge: #c4544c;
+
+      --radius-lg: 28px;
+      --radius: 18px;
+      --beat: 1s;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #121615;
+        --surface: #1a201e;
+        --ink: #ece7de;
+        --ink-2: #b9b5ac;
+        --ink-3: #959189;
+        --rule: #2a312e;
+        --rule-strong: #3a423e;
+        --accent: #7fd0bf;
+        --accent-ink: #0d1f1b;
+        --accent-soft: #1d2f2b;
+        --focus: #7fd0bf;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -14px rgba(0, 0, 0, 0.6);
+
+        --normal: #7fd0bf;    --normal-tint: #17302a;
+        --monitor: #e9b960;   --monitor-tint: #322818;
+        --notify: #f29d68;    --notify-tint: #36241a;
+        --escalate: #f4908a;  --escalate-tint: #3b1d1c;
+        --neutral: #a9aaa3;   --neutral-tint: #212725;
+
+        --warn-bg: #30271a;   --warn-ink: #f0d08e;  --warn-edge: #b7883a;
+        --bad-bg: #371d1b;    --bad-ink: #f6b1aa;   --bad-edge: #c4544c;
+      }
+    }
+
+    /* ---------- Base ---------- */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { -webkit-text-size-adjust: 100%; }
     body {
-      margin: 0 auto;
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font);
+      font-size: 1.125rem;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    .shell {
       max-width: 480px;
-      padding: 16px;
-      font-family: system-ui, sans-serif;
-      background: #0e141b;
-      color: #e8eef4;
+      margin: 0 auto;
+      padding: max(12px, env(safe-area-inset-top)) 16px max(32px, env(safe-area-inset-bottom));
     }
-    header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-    h1 { font-size: 1.15rem; margin: 0; }
-    .sub { color: #93a4b5; font-size: 0.85rem; margin: 4px 0 12px; }
-    .pill {
-      font-size: 0.75rem; font-weight: 650; padding: 4px 10px; border-radius: 999px;
-      background: #334455; color: #e8eef4; white-space: nowrap;
+    h1, h2, h3, p { margin: 0; }
+    svg { display: block; flex: none; }
+    [hidden] { display: none !important; }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 8px; }
+
+    /* ---------- Top bar ---------- */
+    .top {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      min-height: 56px;
     }
-    .pill.live { background: #1f8a4c; }
-    .pill.warn { background: #c9a227; color: #111; }
-    .hero, .card { background: #18222d; border-radius: 16px; padding: 16px; }
-    .hero { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    .hr { font-size: 4.5rem; line-height: 0.9; font-weight: 700; }
-    .unit, .muted { color: #93a4b5; font-size: 1rem; font-weight: 500; }
-    .small { font-size: 0.8rem; }
-    .badge {
-      padding: 8px 12px; border-radius: 999px; font-size: 0.8rem; font-weight: 700;
-      letter-spacing: 0.04em; text-transform: uppercase; background: #334455;
+    .brand {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; color: var(--ink);
     }
-    .badge.normal { background: #1f8a4c; }
-    .badge.monitor { background: #c9a227; color: #111; }
-    .badge.notify { background: #d06a1a; }
-    .badge.escalate { background: #c0392b; }
-    .badge.mini { padding: 2px 8px; font-size: 0.65rem; }
+    .brand svg { color: var(--accent); }
+    .conn {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 0.9rem; font-weight: 600; color: var(--ink-2);
+      white-space: nowrap;
+    }
+    .conn::before {
+      content: ""; width: 9px; height: 9px; border-radius: 50%;
+      background: var(--neutral); opacity: 0.7;
+    }
+    .conn.live::before { background: var(--normal); opacity: 1; box-shadow: 0 0 0 4px var(--normal-tint); }
+    .conn.warn { color: var(--monitor); }
+    .conn.warn::before { background: var(--monitor); opacity: 1; }
+
+    /* ---------- Hero: the one-glance answer ---------- */
+    .hero {
+      --tone: var(--neutral);
+      --tint: var(--neutral-tint);
+      margin-top: 4px;
+      padding: 24px 24px 22px;
+      border-radius: var(--radius-lg);
+      background: var(--tint);
+      transition: background-color 0.6s ease;
+    }
+    .hero[data-level="normal"]   { --tone: var(--normal);   --tint: var(--normal-tint); }
+    .hero[data-level="monitor"]  { --tone: var(--monitor);  --tint: var(--monitor-tint); }
+    .hero[data-level="notify"]   { --tone: var(--notify);   --tint: var(--notify-tint); }
+    .hero[data-level="escalate"] { --tone: var(--escalate); --tint: var(--escalate-tint); box-shadow: inset 0 0 0 2px var(--escalate); }
+
+    .status {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1.6rem; line-height: 1.2; font-weight: 800; letter-spacing: -0.015em;
+      color: var(--tone);
+    }
+    .status svg { width: 28px; height: 28px; }
+
+    .reading {
+      display: flex; align-items: flex-end; gap: 14px;
+      margin-top: 18px;
+    }
+    .hr {
+      font-size: clamp(5.5rem, 30vw, 8rem);
+      line-height: 0.82; font-weight: 700; letter-spacing: -0.045em;
+      font-family: var(--font-num);
+      font-variant-numeric: tabular-nums lining-nums;
+      color: var(--ink);
+      transition: opacity 0.4s ease;
+    }
+    .reading-side { display: flex; flex-direction: column; gap: 10px; padding-bottom: 4px; }
+    .beat { width: 34px; height: 34px; color: var(--tone); transform-origin: 50% 60%; }
+    .hero.is-live .beat { animation: beat var(--beat) ease-out infinite; }
+    .unit { font-size: 1rem; line-height: 1.15; font-weight: 600; color: var(--ink-2); }
+    @keyframes beat {
+      0%   { transform: scale(1); }
+      14%  { transform: scale(1.16); }
+      28%  { transform: scale(1); }
+      40%  { transform: scale(1.07); }
+      55%, 100% { transform: scale(1); }
+    }
+    .hero.is-paused .hr { opacity: 0.38; }
+    .hero.is-paused .beat { animation: none; opacity: 0.45; }
+
+    .hero-foot {
+      display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 16px;
+      margin-top: 20px; padding-top: 14px;
+      border-top: 1px solid color-mix(in srgb, var(--tone) 22%, transparent);
+      font-size: 0.95rem; color: var(--ink-2);
+    }
+    #meta { font-weight: 600; color: var(--ink); }
+
+    /* ---------- Banners ---------- */
     .banner {
-      margin-top: 12px; padding: 10px 14px; border-radius: 12px; font-size: 0.9rem; font-weight: 600;
-      background: #4a3a10; color: #f3d77a;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-top: 12px; padding: 14px 16px;
+      border-radius: var(--radius); border-left: 4px solid var(--warn-edge);
+      background: var(--warn-bg); color: var(--warn-ink);
+      font-size: 1rem; font-weight: 600; line-height: 1.4;
     }
-    .banner.bad { background: #4a1712; color: #f4a59b; }
-    .banner[hidden] { display: none; }
-    .card { margin-top: 12px; }
-    .card h2 { margin: 0 0 8px; font-size: 1rem; }
-    .card p { margin: 6px 0; }
-    .card.alert-card { border-left: 6px solid #334455; }
-    .card.alert-card.normal { border-color: #1f8a4c; }
-    .card.alert-card.monitor { border-color: #c9a227; }
-    .card.alert-card.notify { border-color: #d06a1a; }
-    .card.alert-card.escalate { border-color: #c0392b; }
-    .next { margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #223142; font-weight: 600; }
-    dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; margin: 10px 0 0; font-size: 0.9rem; }
-    dt { color: #93a4b5; }
-    dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-    .tag { font-size: 0.7rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #334455; margin-left: 6px; }
-    .tag.warn { background: #c9a227; color: #111; }
+    .banner.bad { background: var(--bad-bg); color: var(--bad-ink); border-left-color: var(--bad-edge); }
+    .banner svg { width: 22px; height: 22px; margin-top: 1px; }
+
+    /* ---------- Message: headline, reason, next step ---------- */
+    .message {
+      --tone: var(--rule-strong);
+      margin-top: 16px;
+      padding: 22px 22px 20px;
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .message::before {
+      content: ""; position: absolute; left: 0; top: 22px; bottom: 22px; width: 4px;
+      border-radius: 0 4px 4px 0; background: var(--tone);
+    }
+    .message[data-level="normal"]   { --tone: var(--normal); }
+    .message[data-level="monitor"]  { --tone: var(--monitor); }
+    .message[data-level="notify"]   { --tone: var(--notify); }
+    .message[data-level="escalate"] { --tone: var(--escalate); }
+    .eyebrow {
+      font-size: 0.8rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--ink-3);
+    }
+    #headline { margin-top: 6px; font-size: 1.4rem; line-height: 1.25; font-weight: 700; letter-spacing: -0.01em; }
+    #reason { margin-top: 8px; color: var(--ink-2); }
+    .next {
+      display: flex; align-items: center; gap: 14px;
+      margin-top: 18px; padding: 14px 16px;
+      border-radius: 14px; background: var(--accent-soft);
+    }
+    .next svg { width: 24px; height: 24px; color: var(--accent); }
+    .next .eyebrow { color: var(--accent); }
+    #next-step { display: block; font-size: 1.15rem; font-weight: 700; line-height: 1.3; }
+
+    /* ---------- Secondary: collapsible detail ---------- */
+    .more-group {
+      margin-top: 16px;
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+    details + details { border-top: 1px solid var(--rule); }
+    summary {
+      display: flex; align-items: center; gap: 12px;
+      min-height: 64px; padding: 12px 18px;
+      cursor: pointer; list-style: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    summary::-webkit-details-marker { display: none; }
+    summary .s-text { flex: 1; min-width: 0; }
+    summary .s-title { display: block; font-weight: 700; font-size: 1.05rem; }
+    summary .s-hint {
+      display: block; font-size: 0.9rem; color: var(--ink-3);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    summary .chev { width: 20px; height: 20px; color: var(--ink-3); transition: transform 0.2s ease; }
+    details[open] summary .chev { transform: rotate(180deg); }
+    .panel { padding: 0 18px 18px; }
+
+    dl#why { margin: 0; }
+    .why-row {
+      display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+      padding: 11px 0; border-top: 1px solid var(--rule);
+      font-size: 1rem;
+    }
+    .why-row:first-child { border-top: 0; padding-top: 2px; }
+    dt { color: var(--ink-2); }
+    dd { margin: 0; text-align: right; font-weight: 600; font-family: var(--font-num); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    .tag {
+      display: inline-block; margin-left: 8px; vertical-align: 2px;
+      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--ink-3);
+    }
+    .tag.warn { color: var(--monitor); }
+    #patient-line { font-weight: 600; }
+    #conditions { margin-top: 6px; color: var(--ink); }
+    #medications { margin-top: 6px; font-size: 0.95rem; color: var(--ink-2); }
+
     ul.history { list-style: none; margin: 0; padding: 0; }
-    ul.history li {
-      display: grid; grid-template-columns: auto auto 1fr; gap: 8px; align-items: center;
-      padding: 8px 0; border-top: 1px solid #243140; font-size: 0.85rem;
+    ul.history li { padding: 12px 0; border-top: 1px solid var(--rule); }
+    ul.history li:first-child { border-top: 0; padding-top: 2px; }
+    ul.history li.empty { color: var(--ink-3); }
+    .h-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: 0.9rem; }
+    .h-level { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; color: var(--neutral); }
+    .h-level::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+    .h-level[data-level="normal"]   { color: var(--normal); }
+    .h-level[data-level="monitor"]  { color: var(--monitor); }
+    .h-level[data-level="notify"]   { color: var(--notify); }
+    .h-level[data-level="escalate"] { color: var(--escalate); }
+    .h-time { color: var(--ink-3); font-family: var(--font-num); font-variant-numeric: tabular-nums; }
+    .h-text { margin-top: 2px; font-size: 1rem; }
+
+    /* ---------- Actions ---------- */
+    .actions { display: grid; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+      min-height: 56px; padding: 12px 16px;
+      border: 1.5px solid transparent; border-radius: 16px;
+      font: inherit; font-size: 1.05rem; font-weight: 700; line-height: 1.2;
+      cursor: pointer; text-align: center;
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 0.1s ease, background-color 0.2s ease;
     }
-    ul.history li:first-child { border-top: 0; }
-    .row { display: flex; gap: 8px; margin-top: 16px; }
-    button {
-      flex: 1; padding: 14px; border: 0; border-radius: 12px; font-size: 1rem; font-weight: 650;
-      background: #d6e4f0; color: #10202c; cursor: pointer;
+    .btn:active { transform: scale(0.98); }
+    .btn svg { width: 22px; height: 22px; }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); }
+    .btn.quiet { background: transparent; color: var(--ink); border-color: var(--rule-strong); }
+    #simulate { min-height: 52px; font-size: 1rem; font-weight: 600; color: var(--ink-2); }
+    .btn.missed { background: var(--monitor); color: var(--surface); }
+    #sound[aria-pressed="false"] .ico-on, #sound[aria-pressed="true"] .ico-off { display: none; }
+
+    .fineprint { margin-top: 18px; text-align: center; font-size: 0.85rem; color: var(--ink-3); }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
     }
-    button.secondary { background: #2a3a4b; color: #e8eef4; }
-    button.attention { background: #f3d77a; color: #111; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>CardioGlasses</h1>
-    <span class="pill" id="link">Connecting…</span>
-  </header>
-  <p class="sub" id="updated">Waiting for sensor data</p>
+  <div class="shell">
+    <header class="top">
+      <div class="brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 12h4l2-4 3 8 2-4h7"/>
+        </svg>
+        <span>CardioGlasses</span>
+      </div>
+      <span class="conn" id="link" role="status">Connecting…</span>
+    </header>
 
-  <section class="hero">
-    <div>
-      <div class="hr"><span id="hr">--</span><span class="unit"> bpm</span></div>
-      <div class="muted" id="meta">No reading yet</div>
-    </div>
-    <div class="badge" id="badge">—</div>
-  </section>
+    <main>
+      <section class="hero" id="hero" data-level="" aria-label="Your heart right now">
+        <p class="status">
+          <span id="badge">Getting ready</span>
+        </p>
+        <div class="reading">
+          <span class="hr" id="hr" aria-label="heart rate">—</span>
+          <div class="reading-side">
+            <svg class="beat" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 20.6c-.3 0-.6-.1-.8-.3C6.4 16.2 3 13.1 3 9.2 3 6.6 5 4.6 7.5 4.6c1.8 0 3.4 1 4.5 2.5 1.1-1.5 2.7-2.5 4.5-2.5C19 4.6 21 6.6 21 9.2c0 3.9-3.4 7-8.2 11.1-.2.2-.5.3-.8.3z"/>
+            </svg>
+            <span class="unit">beats<br />per minute</span>
+          </div>
+        </div>
+        <div class="hero-foot">
+          <span id="meta">No reading yet</span>
+          <span id="updated">Waiting for sensor data</span>
+        </div>
+      </section>
 
-  <div class="banner bad" id="offline-banner" hidden>Sensor offline: no data received</div>
-  <div class="banner" id="quality-banner" hidden>Poor signal: readings are paused, not alerting</div>
-  <div class="banner" id="patient-banner" hidden></div>
+      <div class="banner bad" id="offline-banner" role="alert" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.8"/><path d="M19 12.9a10 10 0 0 0-2.3-1.7"/><path d="M12 20h.01"/></svg>
+        <span id="offline-text">Sensor offline: no data received</span>
+      </div>
+      <div class="banner" id="quality-banner" role="status" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.2h.01"/></svg>
+        <span>Weak signal. Readings are paused and no alerts will be sent until it improves. Try adjusting your glasses.</span>
+      </div>
+      <div class="banner" id="patient-banner" role="status" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.8h.01"/></svg>
+        <span id="patient-banner-text"></span>
+      </div>
 
-  <section class="card alert-card" id="alert-card">
-    <h2 id="headline">No alerts yet</h2>
-    <p id="reason" class="muted">When something changes, the reason shows here.</p>
-    <dl id="why">
-      <dt>Now vs usual</dt><dd id="why-hr">—</dd>
-      <dt>Above usual</dt><dd id="why-dev">—</dd>
-      <dt>Sustained for</dt><dd id="why-persist">—</dd>
-      <dt>Activity</dt><dd id="why-activity">—</dd>
-      <dt>Signal quality</dt><dd id="why-quality">—</dd>
-      <dt>Recovery</dt><dd id="why-recovery">—</dd>
-      <dt>Confidence</dt><dd id="why-confidence">—</dd>
-    </dl>
-    <div class="next">Next: <span id="next-step">—</span></div>
-  </section>
+      <section class="message" id="alert-card" data-level="" aria-live="polite">
+        <p class="eyebrow">Latest update</p>
+        <h2 id="headline">Nothing to report</h2>
+        <p id="reason">If anything changes, you'll see what happened and why right here.</p>
+        <div class="next">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+          <div>
+            <span class="eyebrow">What to do</span>
+            <span id="next-step">Nothing right now</span>
+          </div>
+        </div>
+      </section>
 
-  <section class="card">
-    <h2>Patient <span class="tag" id="patient-source">—</span></h2>
-    <p id="patient-line" class="muted">Loading context…</p>
-    <p id="conditions"></p>
-    <p id="medications" class="muted small"></p>
-  </section>
+      <div class="more-group">
+        <details id="why-panel">
+          <summary>
+            <span class="s-text">
+              <span class="s-title">Why we think so</span>
+              <span class="s-hint" id="why-hint">Heart rate, signal and recovery</span>
+            </span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <div class="panel">
+            <dl id="why">
+              <div class="why-row"><dt>Now vs usual</dt><dd id="why-hr">—</dd></div>
+              <div class="why-row"><dt>Above usual</dt><dd id="why-dev">—</dd></div>
+              <div class="why-row"><dt>Sustained for</dt><dd id="why-persist">—</dd></div>
+              <div class="why-row"><dt>Activity</dt><dd id="why-activity">—</dd></div>
+              <div class="why-row"><dt>Signal quality</dt><dd id="why-quality">—</dd></div>
+              <div class="why-row"><dt>Recovery</dt><dd id="why-recovery">—</dd></div>
+              <div class="why-row"><dt>Confidence</dt><dd id="why-confidence">—</dd></div>
+            </dl>
+          </div>
+        </details>
 
-  <section class="card">
-    <h2>Alert history</h2>
-    <ul class="history" id="history"><li class="muted">No alerts yet</li></ul>
-  </section>
+        <details id="history-panel">
+          <summary>
+            <span class="s-text">
+              <span class="s-title">Recent alerts</span>
+              <span class="s-hint" id="history-hint">None yet</span>
+            </span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <div class="panel">
+            <ul class="history" id="history"><li class="empty">No alerts yet</li></ul>
+          </div>
+        </details>
 
-  <div class="row">
-    <button type="button" id="sound" class="attention">Enable sound</button>
-    <button type="button" id="simulate" class="secondary">Test alert</button>
+        <details id="patient-panel">
+          <summary>
+            <span class="s-text">
+              <span class="s-title">Health record <span class="tag" id="patient-source">—</span></span>
+              <span class="s-hint" id="patient-line">Loading…</span>
+            </span>
+            <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <div class="panel">
+            <p id="conditions"></p>
+            <p id="medications"></p>
+          </div>
+        </details>
+      </div>
+
+      <div class="actions">
+        <button type="button" id="sound" class="btn primary" aria-pressed="false">
+          <svg class="ico-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5"/><path d="M18.5 7a7 7 0 0 1 0 10"/></svg>
+          <svg class="ico-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 12.2l2 2 4-4.5"/></svg>
+          <span id="sound-label">Enable sound</span>
+        </button>
+        <button type="button" id="simulate" class="btn quiet">
+          <span id="simulate-label">Test alert</span>
+        </button>
+      </div>
+      <p class="fineprint">CardioGlasses compares your heart rate with your own usual range.</p>
+    </main>
   </div>
   <audio id="player" preload="auto"></audio>
 
@@ -144,6 +447,15 @@
     // Tiny silent WAV, played on tap to unlock audio on mobile browsers.
     const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
 
+    // Plain-English status for each level (the level is never shown by color alone).
+    const LEVEL_LABELS = {
+      normal: "You're doing well",
+      monitor: "Keeping an eye on it",
+      notify: "Please check in",
+      escalate: "Get help now"
+    };
+    const LEVEL_SHORT = { normal: "Normal", monitor: "Monitor", notify: "Check in", escalate: "Urgent" };
+
     const state = {
       live: false,
       mock: false,
@@ -153,6 +465,7 @@
       lastReadingAt: null,
       storedOnly: false,
       sensorOffline: false,
+      signalPoor: false,
       currentLevel: null,
       history: [],
       socket: null,
@@ -162,27 +475,46 @@
     const $ = (id) => document.getElementById(id);
     const fmtTime = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     const fmtNum = (v, digits) => (v == null ? "—" : Number(v).toFixed(digits));
+    const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
     function setLink(text, kind) {
       const el = $("link");
       el.textContent = text;
-      el.className = "pill" + (kind ? " " + kind : "");
+      el.className = "conn" + (kind ? " " + kind : "");
     }
 
     function minQuality() {
       return state.patient && state.patient.config ? state.patient.config.min_quality : 0.6;
     }
 
+    // Hero status line + heartbeat state.
+    function renderHero() {
+      const hero = $("hero");
+      const level = state.currentLevel;
+      hero.dataset.level = level || "";
+      $("badge").textContent = level
+        ? (LEVEL_LABELS[level] || level)
+        : state.lastReading ? "Monitoring your heart" : "Getting ready";
+      const offline = !state.mock && $("offline-banner").hidden === false;
+      const paused = state.signalPoor || offline || state.lastReading == null || state.lastReading.hr == null;
+      hero.classList.toggle("is-paused", paused);
+      hero.classList.toggle("is-live", !paused);
+    }
+
     // ---------- Readings ----------
     function renderReading(r) {
       state.lastReading = r;
       state.lastReadingAt = Date.now();
-      $("hr").textContent = r.hr == null ? "--" : String(Math.round(r.hr));
+      $("hr").textContent = r.hr == null ? "—" : String(Math.round(r.hr));
+      if (r.hr != null && r.hr > 20) {
+        document.documentElement.style.setProperty("--beat", (60 / Math.min(r.hr, 220)).toFixed(3) + "s");
+      }
       const bits = [];
-      if (r.activity) bits.push(r.activity);
-      if (r.quality != null) bits.push("quality " + fmtNum(r.quality, 2));
+      if (r.activity) bits.push(r.activity === "resting" ? "At rest" : cap(r.activity));
+      if (r.quality != null) bits.push(r.quality >= minQuality() ? "good signal" : "weak signal");
       $("meta").textContent = bits.join(" · ") || "Measuring…";
       const poor = r.signal_status ? r.signal_status === "poor" : (r.quality == null || r.quality < minQuality());
+      state.signalPoor = poor;
       $("quality-banner").hidden = !poor;
       state.sensorOffline = r.signal_status === "offline";
       renderWhy(r, null);
@@ -191,9 +523,10 @@
 
     function renderWhy(r, alert) {
       if (!r) return;
-      $("why-hr").textContent =
-        (r.hr == null ? "—" : Math.round(r.hr) + " bpm") +
-        " vs " + (r.baseline_hr == null ? "—" : Math.round(r.baseline_hr) + " bpm");
+      const now = r.hr == null ? "—" : Math.round(r.hr) + " bpm";
+      const usual = r.baseline_hr == null ? "—" : Math.round(r.baseline_hr) + " bpm";
+      $("why-hr").textContent = now + " vs " + usual;
+      $("why-hint").textContent = "Now " + now + ", usually " + usual;
       $("why-dev").textContent = r.deviation == null ? "—" : fmtNum(r.deviation, 1) + " SD";
       $("why-persist").textContent = r.persist_s == null ? "—" : Math.round(r.persist_s) + " s";
       $("why-activity").textContent = r.activity || "—";
@@ -208,51 +541,64 @@
     // ---------- Alerts ----------
     function renderAlert(a, live) {
       state.currentLevel = a.level || null;
-      const badge = $("badge");
-      badge.textContent = a.level || "—";
-      badge.className = "badge" + (a.level ? " " + a.level : "");
-      $("alert-card").className = "card alert-card" + (a.level ? " " + a.level : "");
+      $("alert-card").dataset.level = a.level || "";
       $("headline").textContent = a.headline || "Alert";
       $("reason").textContent = a.reason || "";
       $("next-step").textContent = a.next_step || "—";
       renderWhy(a.reading || state.lastReading, a);
+      renderHero();
       if (live) {
         state.history.unshift(a);
         state.history = state.history.slice(0, 10);
         renderHistory();
       }
-      $("simulate").textContent = a.level === "notify" || a.level === "escalate" ? "Test recovery" : "Test alert";
+      $("simulate-label").textContent = a.level === "notify" || a.level === "escalate" ? "Test recovery" : "Test alert";
     }
 
     function renderHistory() {
       const list = $("history");
       list.replaceChildren();
-      if (!state.history.length) {
+      const n = state.history.length;
+      $("history-hint").textContent = n
+        ? n + (n === 1 ? " alert" : " alerts") + " · latest " + fmtTime(state.history[0].t)
+        : "None yet";
+      if (!n) {
         const li = document.createElement("li");
-        li.className = "muted";
+        li.className = "empty";
         li.textContent = "No alerts yet";
         list.append(li);
         return;
       }
       for (const a of state.history) {
         const li = document.createElement("li");
+        const top = document.createElement("div");
+        top.className = "h-top";
+        const level = document.createElement("span");
+        level.className = "h-level";
+        level.dataset.level = a.level || "";
+        level.textContent = LEVEL_SHORT[a.level] || a.level || "—";
         const time = document.createElement("span");
-        time.className = "muted";
+        time.className = "h-time";
         time.textContent = fmtTime(a.t);
-        const badge = document.createElement("span");
-        badge.className = "badge mini " + a.level;
-        badge.textContent = a.level;
-        const text = document.createElement("span");
+        top.append(level, time);
+        const text = document.createElement("p");
+        text.className = "h-text";
         text.textContent = a.headline || "";
-        li.append(time, badge, text);
+        li.append(top, text);
         list.append(li);
       }
     }
 
     // ---------- Voice ----------
+    function setSoundButton(label, kind) {
+      $("sound-label").textContent = label;
+      $("sound").className = "btn " + kind;
+      $("sound").setAttribute("aria-pressed", state.soundOn ? "true" : "false");
+    }
+
     function speak(alert, audioUrl) {
       if (!state.soundOn) {
-        $("sound").textContent = "Enable sound (missed alert)";
+        setSoundButton("Missed an alert · tap for sound", "missed");
         return;
       }
       if (audioUrl) {
@@ -278,14 +624,13 @@
         player.play().catch(() => {});
         if ("speechSynthesis" in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
       }
-      $("sound").textContent = state.soundOn ? "Sound on" : "Enable sound";
-      $("sound").className = state.soundOn ? "secondary" : "attention";
+      setSoundButton(state.soundOn ? "Sound on" : "Enable sound", state.soundOn ? "quiet" : "primary");
     });
 
     // ---------- Patient + status ----------
     function renderPatient(p) {
       state.patient = p;
-      $("patient-line").textContent = p.patient_id + " · age " + p.age + " · " + p.risk_tier + " risk";
+      $("patient-line").textContent = "Age " + p.age + " · " + p.risk_tier + " risk · " + p.patient_id;
       $("conditions").textContent = "Conditions: " + ((p.conditions || []).join(", ") || "none listed");
       const meds = p.medications || [];
       const shown = meds.slice(0, 5).join(", ");
@@ -299,10 +644,10 @@
       tag.className = "tag" + (s.patient_source === "finchnode" ? "" : " warn");
       const banner = $("patient-banner");
       if (s.patient_source === "cache") {
-        banner.textContent = "FinchNode unreachable: using the last cached patient record";
+        $("patient-banner-text").textContent = "FinchNode unreachable: using the last cached patient record";
         banner.hidden = false;
       } else if (s.patient_source === "local") {
-        banner.textContent = "FinchNode unavailable: using the built-in demo patient";
+        $("patient-banner-text").textContent = "FinchNode unavailable: using the built-in demo patient";
         banner.hidden = false;
       } else {
         banner.hidden = true;
@@ -324,6 +669,7 @@
           renderReading(readings[0]);
           // Replay timestamps aren't wall-clock, so don't age stored data; wait for a live one.
           state.storedOnly = true;
+          tick();
         }
       } catch (err) {}
       try {
@@ -398,6 +744,7 @@
         $("updated").textContent = state.mock
           ? "Mock data"
           : state.storedOnly ? "Last stored reading · waiting for live data" : "Waiting for sensor data";
+        renderHero();
         return;
       }
       const age = Date.now() - state.lastReadingAt;
@@ -405,7 +752,8 @@
       $("updated").textContent = "Updated " + (secs < 2 ? "just now" : secs + " s ago");
       const stale = age > OFFLINE_AFTER_MS;
       banner.hidden = !(stale || state.sensorOffline);
-      banner.textContent = stale ? "Sensor offline: no data for " + secs + " s" : "Sensor offline: glasses not connected";
+      $("offline-text").textContent = stale ? "Sensor offline: no data for " + secs + " s" : "Sensor offline: glasses not connected";
+      renderHero();
     }
     setInterval(tick, 1000);
 
