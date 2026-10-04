@@ -12,3 +12,4 @@ data/audio/*
 !data/audio/fallback_*.mp3
 data/finchnode_cache.json
 data/external/
+download.log

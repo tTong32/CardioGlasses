@@ -109,9 +109,14 @@ def train_cutoffs(episodes_path: Path, output_path: Path, plot_dir: Path) -> dic
         'no_meds': filtered_df[~filtered_df['meds_flag']]
     }
 
+    # Mock episodes (ai/train/mock_data.py) use patient ids "mock_..."; never label them as PhysioNet.
+    synthetic = bool(df['patient_id'].astype(str).str.startswith('mock_').any())
+    real_source = 'Wearable-based signals during physical exercises from patients with frailty after open-heart surgery, PhysioNet v1.0.0, DOI: 10.13026/mp8k-7p27'
     cutoffs = {
         'version': 1,
-        'source': 'Wearable-based signals during physical exercises from patients with frailty after open-heart surgery, PhysioNet v1.0.0, DOI: 10.13026/mp8k-7p27',
+        'synthetic': synthetic,
+        'source': ('ILLUSTRATIVE ONLY: synthetic episodes from ai/train/mock_data.py (the PhysioNet download failed). '
+                   'Built to be retrained on: ' + real_source) if synthetic else real_source,
         'created': datetime.utcnow().isoformat() + 'Z',
         'groups': {}
     }

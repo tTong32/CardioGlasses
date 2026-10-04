@@ -230,6 +230,6 @@ The model uses trained percentiles from cardiac rehabilitation patients:
 
 **Location**: `ai/model/recovery_cutoffs.json`
 
-**Source**: PhysioNet frailty dataset (80 post-cardiac surgery patients aged 65+)
+**Source**: illustrative synthetic episodes for now (the PhysioNet download failed). The pipeline is built to be retrained on the PhysioNet frailty dataset (80 post-cardiac surgery patients aged 65+).
 
 **Re-training**: See `ai/train/README.md` for instructions on re-training with real data.
