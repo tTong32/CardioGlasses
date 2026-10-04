@@ -219,6 +219,15 @@ class Coach:
         self._timer = asyncio.create_task(self._recovery_check(s.started_at))
         return s
 
+    async def end_recovery(self) -> WalkState:
+        """Skip the recovery check: back to idle, nothing spoken or logged."""
+        if self.state.phase != "recovering":
+            return self.state
+        self._cancel_timer()
+        self.state = WalkState(recent_hr=self.state.recent_hr)
+        await self._push()
+        return self.state
+
     # ---------- internals ----------
     def _baseline(self, r: Reading) -> Optional[float]:
         return r.baseline_hr if r.baseline_hr is not None else self._last_resting

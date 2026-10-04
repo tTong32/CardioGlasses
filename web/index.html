@@ -124,14 +124,6 @@
 
     /* ---------- Top bar ---------- */
     .top { grid-area: top; display: flex; align-items: center; gap: 8px; min-height: 44px; padding-inline: 4px; }
-    .conn {
-      display: inline-flex; align-items: center; gap: 7px; min-width: 0;
-      font-size: 0.86rem; font-weight: 700; color: var(--ink-2); white-space: nowrap;
-    }
-    .conn i { width: 9px; height: 9px; border-radius: 50%; background: var(--neutral-tone); flex: none; }
-    .conn.live i { background: var(--normal-tone); box-shadow: 0 0 0 3px color-mix(in srgb, var(--normal-tone) 25%, transparent); }
-    .conn.warn { color: var(--monitor-tone); }
-    .conn.warn i { background: var(--monitor-tone); }
     .demo-btn {
       min-height: 32px; padding: 3px 10px; border-radius: 8px; border: 1.5px dashed var(--line-strong);
       background: transparent; color: var(--ink-3); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em;
@@ -508,15 +500,14 @@
 </head>
 <body>
   <div class="app no-banner" id="app">
-    <!-- Top bar: connection, demo controls, sound -->
+    <!-- Top bar: demo controls, sound -->
     <header class="top">
-      <span class="conn" id="link" role="status"><i></i><span id="link-text">Connecting…</span></span>
       <button type="button" class="demo-btn" id="open-demo" aria-haspopup="dialog">Demo</button>
-      <button type="button" class="sound" id="sound" data-mode="off" aria-pressed="false">
+      <button type="button" class="sound" id="sound" data-mode="on" aria-pressed="true">
         <svg class="s-ico s-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
         <svg class="s-ico s-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5"/><path d="M18.5 7a7 7 0 0 1 0 10"/></svg>
         <svg class="s-ico s-missed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg>
-        <span id="sound-label">Turn on sound</span>
+        <span id="sound-label">Sound on</span>
       </button>
     </header>
 
@@ -581,6 +572,7 @@
         <div class="w-drop" id="walk-drop" hidden><b id="walk-drop-n">24</b><span id="walk-drop-text">bpm drop in the first minute</span></div>
         <p class="w-tip" id="walk-tip-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15V9a2 2 0 0 1 2-2h3l5-4v18l-5-4H6a2 2 0 0 1-2-2z"/><path d="M18 9a4 4 0 0 1 0 6"/></svg><span id="walk-tip">I'll only speak up if you go above your zone.</span></p>
         <p class="w-zone" id="walk-zone-note"></p>
+        <button type="button" class="btn" id="walk-end-recovery" hidden>End recovery</button>
         <button type="button" class="btn solid" id="walk-done" hidden>Done</button>
       </article>
 
@@ -776,7 +768,7 @@
     };
 
     const state = {
-      live: false, mock: false, soundOn: false, missed: false, patient: null, lastReading: null, lastAlert: null,
+      live: false, mock: false, soundOn: true, missed: false, patient: null, lastReading: null, lastAlert: null,
       lastReadingAt: null, storedOnly: false, sensorOffline: false, signalPoor: false, currentLevel: null, heldHr: null,
       history: [], socket: null, retryMs: 1000, walk: null, walkDismissed: false, walkStartLocal: null,
       checkin: null, caregiverName: null, patientSource: null, feedPaused: false, trend: []
@@ -789,11 +781,6 @@
     const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
     const minQuality = () => (state.patient && state.patient.config ? state.patient.config.min_quality : 0.6);
     const urgent = () => state.currentLevel === "notify" || state.currentLevel === "escalate";
-
-    function setLink(text, kind) {
-      $("link-text").textContent = text;
-      $("link").className = "conn" + (kind ? " " + kind : "");
-    }
 
     // ======================================================================
     // The answer panel
@@ -1110,6 +1097,7 @@
         $("walk-recover").hidden = phase !== "recovering";
         $("walk-drop").hidden = !(phase === "done" && w.drop_1min != null);
         $("walk-done").hidden = phase !== "done";
+        $("walk-end-recovery").hidden = phase !== "recovering";
         $("walk-tip-row").hidden = phase === "recovering";
         $("walk-zone-note").hidden = phase !== "walking" || !w.zone_note;
         $("walk-zone-note").textContent = w.zone_note ? "Zone " + w.zone_low + "–" + w.zone_high + ": " + w.zone_note + "." : "";
@@ -1179,6 +1167,10 @@
       postActivity("/activity/exercise");
     });
     $("walk-done").addEventListener("click", function () { state.walkDismissed = true; renderWalk(state.walk); });
+    $("walk-end-recovery").addEventListener("click", function () {
+      if (!state.live) return renderWalk({ phase: "idle", mode: null, source: null });
+      postActivity("/activity/end-recovery");
+    });
 
     // ======================================================================
     // Fit to one screen: no page scroll, ever.
@@ -1391,12 +1383,19 @@
       play(alert.voice_text, audioUrl);
     }
     function speakLine(text, audioUrl) { if (state.soundOn) play(text, audioUrl); }
+    function unlockAudio() {
+      const p = $("player"); p.src = SILENT_WAV; p.play().catch(() => {});
+      if ("speechSynthesis" in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+    }
+    document.addEventListener("pointerdown", function once() {
+      document.removeEventListener("pointerdown", once);
+      if (state.soundOn) unlockAudio();
+    });
     $("sound").addEventListener("click", function () {
       const wasMissed = state.missed && !state.soundOn;
       state.soundOn = !state.soundOn;
       if (state.soundOn) {
-        const p = $("player"); p.src = SILENT_WAV; p.play().catch(() => {});
-        if ("speechSynthesis" in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+        unlockAudio();
         state.missed = false;
         // Tapping "Missed an alert" turns sound on and replays what was said.
         if (wasMissed && state.lastAlert) setTimeout(() => speakWithBrowser(state.lastAlert.voice_text), 300);
@@ -1510,7 +1509,7 @@
       try { socket = new WebSocket((location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/ws"); }
       catch (err) { return scheduleReconnect(); }
       state.socket = socket;
-      socket.onopen = function () { state.live = true; state.retryMs = 1000; setLink("Live", "live"); };
+      socket.onopen = function () { state.live = true; state.retryMs = 1000; };
       socket.onmessage = function (event) {
         let msg; try { msg = JSON.parse(event.data); } catch (err) { return; }
         if (msg.type === "reading" && msg.data) { state.storedOnly = false; renderReading(msg.data); }
@@ -1532,7 +1531,6 @@
       socket.onerror = function () { try { socket.close(); } catch (err) {} };
     }
     function scheduleReconnect() {
-      setLink("Reconnecting", "warn");
       setTimeout(connect, state.retryMs);
       state.retryMs = Math.min(state.retryMs * 2, 5000);
     }
@@ -1551,7 +1549,7 @@
       try {
         const res = await fetch("/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(alert) });
         if (!res.ok) throw new Error(String(res.status));
-      } catch (err) { setLink("Test failed", "warn"); }
+      } catch (err) {}
     });
 
     // ======================================================================
@@ -1559,7 +1557,6 @@
     // ======================================================================
     function showMock() {
       state.mock = true;
-      setLink("Example", "warn");
       renderStatus(MOCK_STATUS);
       renderPatient(MOCK_PATIENT);
       demo.quiet();
@@ -1725,11 +1722,6 @@
         ["Why?", () => openSheet("why-sheet")],
         ["Health record", () => openSheet("record-sheet")],
         ["All alerts", () => { renderAllAlerts(state.history); openSheet("history-sheet"); }]
-      ]],
-      ["Connection", [
-        ["Live", () => setLink("Live", "live")],
-        ["Reconnecting", () => setLink("Reconnecting", "warn")],
-        ["Example", () => setLink("Example", "warn")]
       ]]
     ];
     (function buildDemo() {

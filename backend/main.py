@@ -268,6 +268,12 @@ async def stop_activity() -> dict:
     return (await coach.stop()).public()
 
 
+@app.post("/activity/end-recovery")
+async def end_recovery() -> dict:
+    """Skip the one-minute recovery check that follows an exercise."""
+    return (await coach.end_recovery()).public()
+
+
 async def _alert_audio(alert: Alert) -> tuple[str | None, str]:
     try:
         name, source = await asyncio.wait_for(

@@ -325,6 +325,29 @@ def test_stop_in_exercise_runs_recovery(monkeypatch):
     assert "healthy" in h.spoken[-1][1]
 
 
+def test_end_recovery_skips_the_check(monkeypatch):
+    monkeypatch.setenv("WALK_RECOVERY_S", "0.05")
+    h = Harness(monkeypatch)
+
+    async def go():
+        await h.coach.on_reading(reading(h.clock[0], 70, "resting", baseline=68))
+        await h.coach.start()
+        await h.feed(12, 110)
+        await h.coach.stop()
+        spoken = len(h.spoken)
+        state = await h.coach.end_recovery()
+        assert state.phase == "idle" and state.mode is None
+        h.clock[0] += 1000
+        await asyncio.sleep(0.2)
+        assert h.coach.state.phase == "idle" and len(h.spoken) == spoken
+    asyncio.run(go())
+
+
+def test_end_recovery_outside_recovery_does_nothing(monkeypatch):
+    h = Harness(monkeypatch)
+    assert asyncio.run(h.coach.end_recovery()).phase == "idle" and h.spoken == []
+
+
 def test_demo_auto_story_starts_a_quiet_activity(monkeypatch):
     monkeypatch.setenv("ACTIVITY_DETECT_S", "120")
     h = Harness(monkeypatch)
