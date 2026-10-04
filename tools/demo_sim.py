@@ -152,7 +152,7 @@ def make_alert(level: Level, reading: Reading, context: PatientContext) -> Alert
             "Heart rate has stayed high",
             f"Your heart rate has been around {hr} bpm for {persisted} seconds at rest, far above your usual {usual}.{history_text} Consider contacting your care team.",
             "Your heart rate has stayed high for a while. Please sit down, check your phone, and consider contacting your care team.",
-            "Contact your care team",
+            "Consider contacting your care team",
         ),
         "normal": (
             0.9,

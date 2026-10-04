@@ -3,8 +3,8 @@
 A manual start (or "make it exercise") coaches a heart-rate zone from the record and,
 on stop, checks the one-minute recovery. Movement that keeps the heart rate above the
 usual resting rate starts a quiet activity instead: no voice at all. It speaks only in
-exercise mode, and only when something needs saying: the zone, staying above it, back
-in the zone, and the recovery result.
+exercise mode, and only when something needs saying: that it started, staying above
+the zone, back in the zone, and the recovery result.
 
 `phase` stays "walking" while an activity is underway so older clients keep working.
 `mode` is "quiet" or "exercise"; `source` is "auto" or "manual".
@@ -198,7 +198,7 @@ class Coach:
         self._was_above, self._last_tip_at = False, {}
         self._rest.reset()
         await self._push()
-        await self._announce(low, high)
+        await self._announce()
         return s
 
     async def stop(self) -> WalkState:
@@ -215,7 +215,7 @@ class Coach:
         s.recovery_due = s.ended_at + int(recovery_wait_s() * 1000)
         self._arm_cooldown()
         await self._push()
-        await self.speak("Exercise finished. Stand or sit still for a minute, and I'll check how your heart recovers.", "stop")
+        await self.speak("Exercise finished. Stand or sit still for a minute, and I'll check how you recover.", "stop")
         self._timer = asyncio.create_task(self._recovery_check(s.started_at))
         return s
 
@@ -305,15 +305,11 @@ class Coach:
         self._above.reset()
         self._was_above, self._last_tip_at = False, {}
         await self._push()
-        await self._announce(low, high)
+        await self._announce()
         return self.state
 
-    async def _announce(self, low: int, high: int) -> None:
-        await self.speak(
-            f"Exercise started. Try to keep your heart rate between {low} and {high}. "
-            "I'll tell you if you go above it.",
-            "start",
-        )
+    async def _announce(self) -> None:
+        await self.speak("Exercise started.", "start")
 
     def _hr_now(self, window_ms: int = 6000) -> Optional[float]:
         recent = self.state.recent_hr
@@ -359,7 +355,7 @@ class Coach:
             text = f"Your heart rate dropped {drop} beats in the first minute. That's a healthy recovery. Nice work."
         else:
             text = (f"Your heart rate dropped {max(drop, 0)} beats in the first minute, which is slower than expected. "
-                    "Take it easy, and mention it to your care team if it keeps happening.")
+                    "Take it easy, and consider mentioning it to your care team if it keeps happening.")
         await self._push()
         await self.speak(text, "recovery")
         if self.note is not None:

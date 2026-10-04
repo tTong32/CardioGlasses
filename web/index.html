@@ -731,7 +731,7 @@
         reading: reading(104, { persist_s: 90, quality: 0.72, signal_note: "Some beats look missed or extra." }) }),
       escalate: () => ({ t: Date.now(), level: "escalate", confidence: 0.91, headline: "Still high after several minutes",
         reason: "Your heart rate has stayed around 128 for more than 4 minutes at rest, nearly double your usual 68. With heart failure and atrial fibrillation, this needs attention now. If you feel short of breath, dizzy, or have chest pain, call emergency services.",
-        voice_text: "Your heart rate has been very high for several minutes. Please sit down and call your care team now.", next_step: "Sit down and call your care team now",
+        voice_text: "Your heart rate has been very high for several minutes. Please sit down and consider contacting your care team.", next_step: "Sit down and consider contacting your care team",
         reading: reading(128, { persist_s: 250, quality: 0.84 }) })
     };
 
@@ -1086,7 +1086,7 @@
             $("walk-drop-text").textContent = "bpm drop in the first minute";
           }
           $("walk-tip").textContent = w.drop_1min == null ? "No clear reading for the recovery check this time."
-            : w.recovery_ok ? "That's a healthy recovery." : "Slower than expected. Mention it to your care team if it keeps happening.";
+            : w.recovery_ok ? "That's a healthy recovery." : "Slower than expected. Consider mentioning it to your care team if it keeps happening.";
         }
       }
       renderHero();
@@ -1649,7 +1649,7 @@
           mode: "exercise", source: state.walk.source || "auto",
           zone_low: 88, zone_high: 98, zone_note: "usual 68 + 20 to 30, because of metoprolol", last_tip: null
         }));
-        speakLine("Exercise started. Try to keep your heart rate between 88 and 98. I'll tell you if you go above it.");
+        speakLine("Exercise started.");
       },
       walkStart(where) {
         state.walkDismissed = false; state.walkStartLocal = Date.now() - 3 * 60000 - 12000;
@@ -1659,7 +1659,7 @@
         renderWalk({ phase: "walking", mode: "exercise", source: "manual", local: true, started_at: state.walkStartLocal, zone_low: 88, zone_high: 98,
           zone_note: "usual 68 + 20 to 30, because of metoprolol",
           last_tip: where === "above" ? "You're at 106, above your zone of 98. Slow down a little." : null });
-        speakLine(where === "above" ? "You're at 106, above your zone of 98. Slow down a little." : "Exercise started. Try to keep your heart rate between 88 and 98. I'll tell you if you go above it.");
+        speakLine(where === "above" ? "You're at 106, above your zone of 98. Slow down a little." : "Exercise started.");
       },
       walkStop() {
         const w = state.walk;

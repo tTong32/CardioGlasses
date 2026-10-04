@@ -42,14 +42,14 @@ NEXT_STEPS = {
     "normal": "No action needed",
     "monitor": "Stay seated and breathe normally",
     "notify": "Sit down and check your phone",
-    "escalate": "Sit down and contact your care team",
+    "escalate": "Sit down and consider contacting your care team",
 }
 # The spoken instruction is fixed per level; Gemini only describes what was measured.
 VOICE_ACTIONS = {
     "normal": "I'll keep monitoring.",
     "monitor": "Stay seated and rest for now.",
     "notify": "Please sit down and check your phone.",
-    "escalate": "Please sit down and contact your care team.",
+    "escalate": "Please sit down and consider contacting your care team.",
 }
 CARDIAC_TERMS = ("atrial fibrillation", "heart failure", "coronary", "arrhythmia", "cardiomyopathy", "hypertension")
 GEMINI_DEADLINE_MS = 10_000  # the API's minimum allowed deadline
@@ -131,7 +131,7 @@ def template(level: Level, kind: str, reading: Reading, context: PatientContext)
         voice = {
             "monitor": "Your heart rate is settling a little slowly. Stay seated and rest.",
             "notify": "Your heart rate is taking a while to settle. Please sit down and check your phone.",
-            "escalate": "Your heart rate is still high after activity. Please sit down and contact your care team.",
+            "escalate": "Your heart rate is still high after activity. Please sit down and consider contacting your care team.",
         }[level]
     else:
         if level == "monitor":
@@ -142,7 +142,7 @@ def template(level: Level, kind: str, reading: Reading, context: PatientContext)
             voice = (
                 "Your heart rate has stayed high while you're resting. Please sit down and check your phone."
                 if level == "notify"
-                else "Your heart rate has stayed high for a while. Please sit down and contact your care team."
+                else "Your heart rate has stayed high for a while. Please sit down and consider contacting your care team."
             )
     return Explanation(HEADLINES[(level, kind)], _include_note(reason, reading), voice, NEXT_STEPS[level], "template")
 

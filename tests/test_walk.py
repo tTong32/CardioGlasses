@@ -78,7 +78,7 @@ def test_start_announces_the_zone_from_the_learned_baseline(monkeypatch):
         assert (state.zone_low, state.zone_high) == (88, 98)
         assert state.mode == "exercise" and state.source == "manual" and state.phase == "walking"
     asyncio.run(go())
-    assert h.spoken[0][0] == "start" and "between 88 and 98" in h.spoken[0][1]
+    assert h.spoken[0] == ("start", "Exercise started.")
 
 
 def test_speaks_only_when_above_the_zone_and_once_back_in(monkeypatch):
@@ -188,7 +188,7 @@ def test_quiet_to_exercise_announces_the_zone_without_restarting(monkeypatch):
         assert again.started_at == started
     asyncio.run(go())
     assert [k for k, _ in h.spoken] == ["start"]
-    assert "between 88 and 98" in h.spoken[0][1]
+    assert h.spoken[0] == ("start", "Exercise started.")
 
 
 def test_stop_in_quiet_is_silent(monkeypatch):
@@ -278,7 +278,7 @@ def test_manual_start_ignores_cooldown(monkeypatch):
         state = await h.coach.start()
         assert state.mode == "exercise" and state.source == "manual" and state.phase == "walking"
     asyncio.run(go())
-    assert h.spoken[0][0] == "start" and "between 88 and 98" in h.spoken[0][1]
+    assert h.spoken[0] == ("start", "Exercise started.")
 
 
 def test_weak_signal_readings_are_ignored(monkeypatch):
