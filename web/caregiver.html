@@ -46,14 +46,16 @@
     .brand { display: flex; align-items: center; gap: 8px; min-width: 0; font-family: var(--font-display); font-size: 1.02rem; font-weight: 700; }
     .brand svg { color: var(--accent); }
     .brand span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .top-right { display: flex; align-items: center; gap: 8px; flex: none; }
-    .conn { display: inline-flex; align-items: center; gap: 7px; font-size: 0.85rem; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
-    .conn::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--neutral); }
-    .conn.live::before { background: var(--normal); box-shadow: 0 0 0 3px var(--normal-tint); }
-    .conn.warn { color: var(--monitor); } .conn.warn::before { background: var(--monitor); }
-    .pill { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 11px; border-radius: 10px; border: 1.5px solid transparent; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
-    .pill.primary { background: var(--accent); color: var(--accent-ink); }
-    .pill.quiet { background: transparent; border-color: var(--rule-strong); color: var(--ink-2); }
+    .alerts {
+      display: inline-flex; align-items: center; gap: 7px;
+      min-height: 44px; padding: 6px 14px 6px 11px; border-radius: 10px; border: 1.5px solid transparent;
+      font-size: 0.92rem; font-weight: 800; white-space: nowrap;
+    }
+    .alerts svg { width: 20px; height: 20px; }
+    .alerts[data-mode="on"] { background: var(--accent); color: var(--accent-ink); }
+    .alerts[data-mode="off"] { background: transparent; border-color: var(--rule-strong); color: var(--ink-2); }
+    .alerts .a-ico { display: none; }
+    .alerts[data-mode="off"] .a-off, .alerts[data-mode="on"] .a-on { display: block; }
 
     .card {
       --tone: var(--neutral); --tint: var(--neutral-tint);
@@ -80,15 +82,26 @@
     .big:active { transform: scale(0.98); }
 
     .log { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); border: 1px solid var(--rule); padding: 10px 16px 4px; }
-    .log h2 { font-size: 1rem; font-weight: 700; padding-bottom: 4px; }
-    #events { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; }
-    #events li { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid var(--rule); font-size: 0.95rem; }
-    #events li:first-child { border-top: 0; }
-    #events li.empty { display: block; color: var(--ink-3); }
+    .log-head { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 4px; }
+    .log h2 { font-size: 1rem; font-weight: 700; }
+    .see-all { border: 0; background: none; color: var(--accent); font-weight: 800; font-size: 0.95rem; padding: 8px 0; min-height: 44px; }
+    .events { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; }
+    .events li { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid var(--rule); font-size: 0.95rem; }
+    .events li:first-child { border-top: 0; }
+    .events li.empty { display: block; color: var(--ink-3); }
     .e-time { color: var(--ink-3); font-size: 0.85rem; font-family: var(--font-num); font-variant-numeric: tabular-nums; padding-top: 1px; }
     .e-text b { font-weight: 700; }
     .e-via { display: block; font-size: 0.8rem; color: var(--ink-3); }
-    #events li.urgent .e-text { color: var(--escalate); }
+    .events li.urgent .e-text { color: var(--escalate); }
+
+    .all-sheet { border: 0; padding: 0; width: min(480px, 100%); height: 100%; max-height: 100dvh; margin: 0 auto; background: var(--bg); color: var(--ink); }
+    .all-sheet::backdrop { background: rgba(28, 8, 8, 0.48); }
+    .all-inner { height: 100%; display: flex; flex-direction: column; padding: max(8px, env(safe-area-inset-top)) 16px max(12px, env(safe-area-inset-bottom)); }
+    .all-head { flex: none; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 8px 0 12px; }
+    .all-head h2 { font-family: var(--font-display); font-size: 1.6rem; line-height: 1.1; }
+    .all-head p { color: var(--ink-3); font-size: 0.9rem; margin-top: 4px; }
+    .all-close { width: 44px; height: 44px; flex: none; border-radius: 12px; border: 1.5px solid var(--rule-strong); background: var(--surface); display: grid; place-items: center; }
+    #all-events { flex: 1 1 auto; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 4px 16px; }
     @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
   </style>
 </head>
@@ -99,10 +112,11 @@
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-4 3 8 2-4h7"/></svg>
         <span>Family view</span>
       </div>
-      <div class="top-right">
-        <span class="conn" id="link" role="status">Connecting…</span>
-        <button type="button" class="pill primary" id="alerts-btn" aria-pressed="false">Turn on alerts</button>
-      </div>
+      <button type="button" class="alerts" id="alerts-btn" data-mode="off" aria-pressed="false">
+        <svg class="a-ico a-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+        <svg class="a-ico a-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5"/><path d="M18.5 7a7 7 0 0 1 0 10"/></svg>
+        <span id="alerts-label">Turn on alerts</span>
+      </button>
     </header>
 
     <section class="card" id="card" data-state="" aria-live="assertive">
@@ -119,17 +133,33 @@
     </section>
 
     <section class="log" aria-label="Activity">
-      <h2>Activity</h2>
-      <ul id="events"><li class="empty">Nothing yet.</li></ul>
+      <div class="log-head">
+        <h2>Activity</h2>
+        <button type="button" class="see-all" id="see-all">See all activity</button>
+      </div>
+      <ul class="events" id="events"><li class="empty">Nothing yet.</li></ul>
     </section>
   </div>
+
+  <dialog class="all-sheet" id="all-sheet" aria-labelledby="all-title">
+    <div class="all-inner">
+      <div class="all-head">
+        <div>
+          <h2 id="all-title">All activity</h2>
+          <p id="all-count">Newest first</p>
+        </div>
+        <button type="button" class="all-close" id="all-close" aria-label="Close">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+      <ul class="events" id="all-events"></ul>
+    </div>
+  </dialog>
 
   <script>
     const $ = (id) => document.getElementById(id);
     const state = { name: "Your family member", caregiver: "you", checkin: null, events: [], reading: null, alertsOn: false, socket: null, retryMs: 1000, deadline: 0, ringing: false };
     const fmtTime = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-    function setLink(text, kind) { $("link").textContent = text; $("link").className = "conn" + (kind ? " " + kind : ""); }
 
     // ---------- Alarm (sound + vibration + speech), only after the caregiver turns alerts on ----------
     let audioCtx = null, alarmTimer = null;
@@ -171,8 +201,8 @@
       if (state.alertsOn) {
         try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); audioCtx.resume(); beep(); } catch (err) {}
       }
-      $("alerts-btn").textContent = state.alertsOn ? "Alerts on" : "Turn on alerts";
-      $("alerts-btn").className = "pill " + (state.alertsOn ? "quiet" : "primary");
+      $("alerts-btn").dataset.mode = state.alertsOn ? "on" : "off";
+      $("alerts-label").textContent = state.alertsOn ? "Alerts on" : "Turn on alerts";
       $("alerts-btn").setAttribute("aria-pressed", String(state.alertsOn));
     });
 
@@ -235,13 +265,13 @@
     }
     setInterval(tickCountdown, 500);
 
-    function renderEvents() {
-      const list = $("events");
+    const PREVIEW = 3;
+    function fillEvents(list, events) {
       list.replaceChildren();
-      if (!state.events.length) {
+      if (!events.length) {
         const li = document.createElement("li"); li.className = "empty"; li.textContent = "Nothing yet."; list.append(li); return;
       }
-      for (const e of state.events) {
+      for (const e of events) {
         const li = document.createElement("li");
         if (e.urgent) li.className = "urgent";
         const time = document.createElement("span"); time.className = "e-time"; time.textContent = fmtTime(e.t);
@@ -255,6 +285,15 @@
         list.append(li);
       }
     }
+    function renderEvents() {
+      fillEvents($("events"), state.events.slice(0, PREVIEW));
+      fillEvents($("all-events"), state.events);
+      const n = state.events.length;
+      $("all-count").textContent = n ? n + (n === 1 ? " event" : " events") + " · newest first" : "Nothing yet";
+    }
+
+    $("see-all").addEventListener("click", function () { $("all-sheet").showModal(); });
+    $("all-close").addEventListener("click", function () { $("all-sheet").close(); });
 
     $("ack").addEventListener("click", async function () {
       stopAlarm();
@@ -276,12 +315,12 @@
     }
 
     function connect() {
-      if (!location.host) { setLink("Example", "warn"); return demo(); }
+      if (!location.host) return demo();
       let socket;
       try { socket = new WebSocket((location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/ws"); }
       catch (err) { return reconnect(); }
       state.socket = socket;
-      socket.onopen = function () { state.retryMs = 1000; setLink("Live", "live"); };
+      socket.onopen = function () { state.retryMs = 1000; };
       socket.onmessage = function (event) {
         let msg; try { msg = JSON.parse(event.data); } catch (err) { return; }
         if (msg.type === "reading") { state.reading = msg.data; render(); }
@@ -291,7 +330,7 @@
       socket.onclose = function () { if (state.socket === socket) reconnect(); };
       socket.onerror = function () { try { socket.close(); } catch (err) {} };
     }
-    function reconnect() { setLink("Reconnecting", "warn"); setTimeout(connect, state.retryMs); state.retryMs = Math.min(state.retryMs * 2, 5000); }
+    function reconnect() { setTimeout(connect, state.retryMs); state.retryMs = Math.min(state.retryMs * 2, 5000); }
 
     // Opened as a file: show an example of the urgent state.
     function demo() {
