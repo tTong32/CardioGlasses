@@ -132,9 +132,11 @@ IMU_MOVING_FREQ_HZ = 1.5  # Hz
 # Beat-to-beat variability
 HRV_JITTER_PERCENT = 3.0  # percent of IBI
 
-# Sensor limits (for clipping)
+# Sensor limits (for clipping). The MAX30102 FIFO value is 18-bit (0-262143) at the
+# firmware's ADC range setting (hw/README.md); this used to assume a 16-bit sensor
+# (0-65535), which made every real reading around 130000 look 100% clipped.
 PPG_SENSOR_MIN = 0
-PPG_SENSOR_MAX = 65535
+PPG_SENSOR_MAX = 262143
 
 # ============================================================================
 # Demo patient

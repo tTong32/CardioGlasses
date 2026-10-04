@@ -15,10 +15,16 @@ RecoveryVerdict = Literal["normal", "slow", "very_slow"]
 
 
 class Sample(BaseModel):
-    """Contract A. One PPG + IMU sample."""
+    """Contract A. One PPG + IMU sample.
+
+    `red` is the optional second PPG channel the original contract note left open
+    ("2nd PPG channel optional"): the MAX30102 reports both `ir` (-> `ppg`) and `red`.
+    Defaults to None so Contract A's exact 8-key wire format still validates unchanged.
+    """
 
     t: int
     ppg: Optional[int]
+    red: Optional[int] = None
     ax: Optional[float]
     ay: Optional[float]
     az: Optional[float]
