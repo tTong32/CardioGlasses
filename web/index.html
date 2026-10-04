@@ -315,6 +315,7 @@
     .dock-btn.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
     .dock-btn.on svg { color: var(--accent-ink); }
     .dock-btn:disabled { opacity: 0.6; cursor: default; }
+    .dock-btn.recovering { font-size: 0.8rem; line-height: 1.15; }
     .badge {
       position: absolute; top: 6px; right: calc(50% - 32px); min-width: 22px; height: 22px; padding: 0 6px;
       border-radius: 11px; background: var(--ink); color: var(--bg); font-size: 0.78rem; font-weight: 800;
@@ -395,11 +396,8 @@
     dd { text-align: right; font-weight: 800; }
     .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; background: var(--normal-field); color: var(--normal-ink); vertical-align: 3px; }
     .tag.warn { background: var(--warn-bg); color: var(--warn-ink); }
-    .effects li { padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); border-left: 4px solid var(--accent); font-size: 0.97rem; }
-    .effects li + li { margin-top: 8px; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .chips li { padding: 6px 11px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); font-size: 0.95rem; }
-    .chips li.key { border-color: var(--accent); font-weight: 700; }
     .meds li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); }
     .meds li:first-child { border-top: 0; }
     .meds b { font-weight: 700; }
@@ -620,7 +618,6 @@
         <button type="button" class="close" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
       <div class="sheet-body">
-        <div class="sec" id="effects-sec" hidden><p class="eyebrow">How your record shapes monitoring</p><ul class="effects" id="record-effects"></ul></div>
         <div class="sec"><p class="eyebrow">Conditions</p><ul class="chips" id="conditions"></ul></div>
         <div class="sec"><p class="eyebrow">Medications</p><ul class="meds" id="medications"></ul></div>
       </div>
@@ -1062,8 +1059,10 @@
       const btn = $("walk-btn");
       const phase = w ? w.phase : "idle";
       btn.classList.toggle("on", phase === "walking");
-      btn.disabled = phase === "recovering";
-      $("walk-label").textContent = phase === "walking" ? "Stop" : phase === "recovering" ? "Checking…" : "Activity";
+      btn.classList.toggle("recovering", phase === "recovering");
+      btn.disabled = false;
+      btn.setAttribute("aria-label", phase === "recovering" ? "End recovery check" : (phase === "walking" ? "Stop activity" : "Start activity"));
+      setWalkLabel();
       if (!isQuiet() && walkActive()) {
         $("walk-recover").hidden = phase !== "recovering";
         $("walk-drop").hidden = !(phase === "done" && w.drop_1min != null);
@@ -1094,9 +1093,31 @@
       renderFeed();
       updateWalkLive();
     }
+    function setWalkLabel() {
+      const w = state.walk;
+      const phase = w ? w.phase : "idle";
+      if (phase !== "recovering") {
+        $("walk-label").textContent = phase === "walking" ? "Stop" : "Activity";
+        return;
+      }
+      // The recovery card is hidden while a check-in alert is up, so the countdown has to live on the button.
+      if ($("walkcard").hidden && state.recoveryDue) {
+        const left = Math.max(0, Math.ceil((state.recoveryDue - Date.now()) / 1000));
+        $("walk-label").textContent = "Checking " + left + "s";
+        $("walk-btn").setAttribute("aria-label", "End recovery check, " + left + " seconds left");
+      } else {
+        $("walk-label").textContent = "Checking…";
+        $("walk-btn").setAttribute("aria-label", "End recovery check");
+      }
+    }
+    function endRecovery() {
+      if (!state.live) return renderWalk({ phase: "idle", mode: null, source: null });
+      postActivity("/activity/end-recovery");
+    }
     function updateWalkLive() {
       const w = state.walk;
       if (!w || !walkActive()) return;
+      if (w.phase === "recovering") setWalkLabel();
       if (w.phase === "walking") {
         const clock = fmtClock(Date.now() - (state.walkStartLocal || Date.now()));
         if (isQuiet()) { $("quiet-clock").textContent = clock; return; }
@@ -1124,6 +1145,7 @@
     }
     $("walk-btn").addEventListener("click", function () {
       const w = state.walk;
+      if (w && w.phase === "recovering") return endRecovery();
       const active = w && w.phase === "walking";
       if (!state.live) return active ? demo.walkStop() : demo.walkStart("in");
       if (!active) { state.walkDismissed = false; state.walkStartLocal = Date.now(); }
@@ -1138,10 +1160,7 @@
       postActivity("/activity/exercise");
     });
     $("walk-done").addEventListener("click", function () { state.walkDismissed = true; renderWalk(state.walk); });
-    $("walk-end-recovery").addEventListener("click", function () {
-      if (!state.live) return renderWalk({ phase: "idle", mode: null, source: null });
-      postActivity("/activity/end-recovery");
-    });
+    $("walk-end-recovery").addEventListener("click", endRecovery);
 
     // ======================================================================
     // Fit to one screen: no page scroll, ever.
@@ -1382,9 +1401,8 @@
       state.patient = p;
       $("patient-line").textContent = "Age " + p.age + " · " + cap(p.risk_tier) + " risk" + (p.clinic_resting_hr ? " · clinic heart rate " + Math.round(p.clinic_resting_hr) : "");
       const conds = $("conditions"); conds.replaceChildren();
-      const heart = /fibrillation|heart|arrhythm|hypertension/i;
       for (const c of (p.conditions && p.conditions.length ? p.conditions : ["None listed"])) {
-        const li = document.createElement("li"); li.textContent = c; if (heart.test(c)) li.className = "key"; conds.append(li);
+        const li = document.createElement("li"); li.textContent = c; conds.append(li);
       }
       const meds = $("medications"); meds.replaceChildren();
       for (const m of (p.medications && p.medications.length ? p.medications : ["None listed"])) {
@@ -1403,9 +1421,6 @@
       tag.textContent = labels[s.patient_source] || s.patient_source;
       tag.className = "tag" + (s.patient_source === "finchnode" ? "" : " warn");
       if (s.caregiver_name) state.caregiverName = s.caregiver_name;
-      const list = $("record-effects"); list.replaceChildren();
-      for (const text of s.record_effects || []) { const li = document.createElement("li"); li.textContent = text; list.append(li); }
-      $("effects-sec").hidden = !(s.record_effects || []).length;
       renderBanner();
     }
 
