@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="color-scheme" content="light dark" />
+  <meta name="color-scheme" content="light" />
   <title>CardioGlasses · Family</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -19,26 +19,16 @@
       src: local("Segoe UI Semibold"), local("SegoeUI-Semibold"), local("Roboto Medium"), local("Roboto-Medium"), local("Helvetica Neue Medium"), local("HelveticaNeue-Medium"), local("Arial Bold"), local("Arial-BoldMT");
     }
     :root {
-      color-scheme: light dark;
+      color-scheme: light;
       --font-num: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
       --font: "CG Digits", "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      --bg: #f5f1ea; --surface: #fffdf9; --ink: #1c2422; --ink-2: #4c5753; --ink-3: #6b7570;
-      --rule: #e4ddd1; --rule-strong: #d3cabb; --accent: #1d5f58; --accent-ink: #ffffff; --accent-soft: #e2eeeb;
-      --shadow: 0 1px 2px rgba(60, 45, 20, 0.06), 0 8px 24px -12px rgba(60, 45, 20, 0.18);
-      --normal: #22695a; --normal-tint: #e3efe9; --monitor: #8a5a00; --monitor-tint: #f5ead3;
-      --notify: #a4461a; --notify-tint: #f7e3d6; --escalate: #a52520; --escalate-tint: #f8dcd8;
-      --neutral: #5d6864; --neutral-tint: #ebe6dd;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #121615; --surface: #1a201e; --ink: #ece7de; --ink-2: #b9b5ac; --ink-3: #959189;
-        --rule: #2a312e; --rule-strong: #3a423e; --accent: #7fd0bf; --accent-ink: #0d1f1b; --accent-soft: #1d2f2b;
-        --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -14px rgba(0, 0, 0, 0.6);
-        --normal: #7fd0bf; --normal-tint: #17302a; --monitor: #e9b960; --monitor-tint: #322818;
-        --notify: #f29d68; --notify-tint: #36241a; --escalate: #f4908a; --escalate-tint: #3b1d1c;
-        --neutral: #a9aaa3; --neutral-tint: #212725;
-      }
+      --bg: #faf7f7; --surface: #ffffff; --ink: #1a1212; --ink-2: #5c4545; --ink-3: #7a6565;
+      --rule: #eadfdf; --rule-strong: #d4c4c4; --accent: #c4161c; --accent-ink: #ffffff; --accent-soft: #fdecea;
+      --shadow: 0 1px 2px rgba(80, 16, 16, 0.05), 0 8px 24px -12px rgba(80, 16, 16, 0.2);
+      --normal: #c4161c; --normal-tint: #ffffff; --monitor: #c4161c; --monitor-tint: #fdecea;
+      --notify: #a10e14; --notify-tint: #f8d4d0; --escalate: #c4161c; --escalate-tint: #f8d0cc;
+      --neutral: #8a7070; --neutral-tint: #f3eeee;
     }
     *, *::before, *::after { box-sizing: border-box; }
     html, body { height: 100%; }
@@ -61,13 +51,13 @@
     .conn::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--neutral); }
     .conn.live::before { background: var(--normal); box-shadow: 0 0 0 3px var(--normal-tint); }
     .conn.warn { color: var(--monitor); } .conn.warn::before { background: var(--monitor); }
-    .pill { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 11px; border-radius: 999px; border: 1.5px solid transparent; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
+    .pill { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 11px; border-radius: 10px; border: 1.5px solid transparent; font-size: 0.85rem; font-weight: 700; white-space: nowrap; }
     .pill.primary { background: var(--accent); color: var(--accent-ink); }
     .pill.quiet { background: transparent; border-color: var(--rule-strong); color: var(--ink-2); }
 
     .card {
       --tone: var(--neutral); --tint: var(--neutral-tint);
-      flex: none; padding: clamp(14px, 2.4dvh, 22px) 20px; border-radius: 28px; background: var(--tint);
+      flex: none; padding: clamp(14px, 2.4dvh, 22px) 20px; border-radius: 16px; background: var(--tint); border: 1px solid var(--rule);
       display: grid; gap: clamp(8px, 1.4dvh, 12px); transition: background-color 0.5s ease;
     }
     .card[data-state="calm"] { --tone: var(--normal); --tint: var(--normal-tint); }
@@ -81,15 +71,15 @@
     #hr { font-family: var(--font-num); font-size: clamp(2.2rem, 7dvh, 3.4rem); font-weight: 700; line-height: 1; letter-spacing: -0.03em; }
     .vitals small { color: var(--ink-2); font-weight: 600; }
     #detail { color: var(--ink-2); font-size: 0.98rem; }
-    .message { background: var(--surface); border-radius: 16px; padding: 12px 14px; display: grid; gap: 6px; }
+    .message { background: var(--surface); border-radius: 10px; padding: 12px 14px; display: grid; gap: 6px; }
     .message .label { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
     #message-text { font-size: 0.98rem; }
     #delivery { font-size: 0.85rem; font-weight: 700; }
     #delivery.ok { color: var(--normal); } #delivery.bad { color: var(--escalate); } #delivery.plain { color: var(--ink-3); }
-    .big { width: 100%; min-height: 56px; border-radius: 18px; border: 0; background: var(--escalate); color: var(--surface); font-size: 1.15rem; font-weight: 800; }
+    .big { width: 100%; min-height: 56px; border-radius: 12px; border: 0; background: var(--escalate); color: var(--surface); font-size: 1.15rem; font-weight: 800; }
     .big:active { transform: scale(0.98); }
 
-    .log { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-radius: 18px; background: var(--surface); box-shadow: var(--shadow); padding: 10px 16px 4px; }
+    .log { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); border: 1px solid var(--rule); padding: 10px 16px 4px; }
     .log h2 { font-size: 1rem; font-weight: 700; padding-bottom: 4px; }
     #events { list-style: none; margin: 0; padding: 0; overflow-y: auto; min-height: 0; }
     #events li { display: grid; grid-template-columns: auto 1fr; gap: 10px; padding: 9px 0; border-top: 1px solid var(--rule); font-size: 0.95rem; }

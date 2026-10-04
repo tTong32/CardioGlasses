@@ -81,7 +81,9 @@ DEVIATION_NORMAL_THRESHOLD = 1.0  # return to normal
 DEVIATION_NORMAL_DURATION_S = 20.0
 
 # Confidence
-CONFIDENCE_MIN_FOR_ALERT = 0.5  # cap level at monitor if below
+# Cap level at monitor if below. Low enough that a reading passing min_quality (0.3) can
+# still notify: hackathon hardware is noisy, so only the noisiest windows are held back.
+CONFIDENCE_MIN_FOR_ALERT = 0.25
 
 # ============================================================================
 # Explainer (Phase 5)
@@ -149,7 +151,7 @@ DEMO_PATIENT = PatientContext(
     medications=["metformin", "lisinopril"],
     risk_tier="high",
     config=Config(
-        min_quality=0.6,
+        min_quality=0.3,
         persist_s=30,
         deviation_trigger=2.0,
         cooldown_s=120,

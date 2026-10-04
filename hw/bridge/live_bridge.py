@@ -248,7 +248,7 @@ def main(argv: Optional[list[str]] = None) -> None:
         explainer = Explainer(use_llm=not args.no_llm)
         print(f"Patient: {context.patient_id} ({context.risk_tier} risk)", file=sys.stderr)
         print(f"Wording: {'Gemini ' + explainer.model if explainer.uses_llm else 'templates'}", file=sys.stderr)
-        pipeline = Pipeline(context, explainer)
+        pipeline = Pipeline(context, explainer, hardware=True)  # no irregular-rhythm scoring on real glasses
 
     asyncio.run(run(args.seconds, args.out or default_out_path(), pipeline, args.base_url, args.dry_run))
 

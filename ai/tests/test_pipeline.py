@@ -207,10 +207,9 @@ def test_brief_dip_resets_the_normal_timer():
 
 
 def test_low_confidence_caps_at_monitor():
-    loose = CONTEXT.model_copy(update={"config": CONTEXT.config.model_copy(update={"min_quality": 0.3})})
-    engine = DecisionEngine(loose)
-    alert = engine.update(reading(persist_s=30, quality=0.4))
-    assert alert.level == "monitor"
+    loose = CONTEXT.model_copy(update={"config": CONTEXT.config.model_copy(update={"min_quality": 0.2})})
+    assert DecisionEngine(loose).update(reading(persist_s=30, quality=0.22)).level == "monitor"
+    assert DecisionEngine(loose).update(reading(persist_s=30, quality=0.4)).level == "notify"
 
 
 def test_plain_signal_note_names_the_problem():
@@ -493,3 +492,12 @@ def test_record_update_mid_run_keeps_learning_and_switches_rules():
     list(never.run(samples[:half]))
     unswitched = trusted(list(never.run(samples[half:])))
     assert switched > 0.8 and switched > unswitched + 0.25
+
+
+def test_hardware_skips_irregular_rhythm_scoring():
+    """Real glasses are worn by people without the record's AF: score the signal as regular."""
+    pipeline = Pipeline(CONTEXT, hardware=True)
+    assert not pipeline.irregular_rhythm and pipeline.min_std == 6.0  # the record's AF still widens the baseline
+    pipeline.update_context(CONTEXT)
+    assert not pipeline.irregular_rhythm
+    assert Pipeline(CONTEXT).irregular_rhythm  # simulations keep it

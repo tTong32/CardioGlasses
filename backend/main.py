@@ -42,7 +42,7 @@ FALLBACK_PATIENT = {
     "medications": ["metoprolol", "metformin"],
     "risk_tier": "high",
     "config": {
-        "min_quality": 0.6,
+        "min_quality": 0.3,
         "persist_s": 30,
         "deviation_trigger": 2.0,
         "cooldown_s": 120,

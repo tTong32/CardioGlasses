@@ -5,7 +5,7 @@ PPG -> HR, beat intervals, quality; IMU -> resting/moving; HR + activity -> base
 deviation, persistence, recovery; then the decision engine may emit an Alert.
 
     python -m ai.pipeline --scenario slow_recovery --speed 10     # synthetic, posts to backend
-    python -m ai.pipeline data/rec_rest.csv --speed 5             # a recording
+    python -m ai.pipeline data/rec_rest.csv --speed 5 --hardware  # a recording from the glasses
     python -m ai.pipeline --scenario elevated_rest --dry-run      # print only, no backend
 """
 
@@ -56,14 +56,18 @@ class Step:
 class Pipeline:
     """Stateful sample-to-Reading pipeline for one wearer."""
 
-    def __init__(self, context: PatientContext, explainer: Optional[Explainer] = None):
+    def __init__(self, context: PatientContext, explainer: Optional[Explainer] = None, hardware: bool = False):
+        # hardware: the signal comes from the real glasses, worn by someone without the
+        # record's irregular rhythm. Irregular-rhythm scoring then rejects ~87% of usable
+        # windows (it reads the uneven pulse height of behind-ear PPG as noise), so it's off.
+        self.hardware = hardware
         self.context = context
         self.window: deque[Sample] = deque()
         self.activity = ActivityDetector()
         self.baseline = BaselineTracker()
         self.recovery = RecoveryModel(cutoffs_path=str(CUTOFFS_PATH), medications=context.medications)
         self.engine = DecisionEngine(context, explainer)
-        self.irregular_rhythm = irregular_rhythm_expected(context)
+        self.irregular_rhythm = irregular_rhythm_expected(context) and not hardware
         self.min_std = baseline_min_std(context)
         self.clinic_hr = context.clinic_resting_hr
         self._next_emit_ms: Optional[int] = None
@@ -80,7 +84,7 @@ class Pipeline:
         (baseline, recovery episode, alert level and its cooldown all carry over)."""
         self.context = context
         self.engine.context = context
-        self.irregular_rhythm = irregular_rhythm_expected(context)
+        self.irregular_rhythm = irregular_rhythm_expected(context) and not self.hardware
         self.min_std = baseline_min_std(context)
         self.clinic_hr = context.clinic_resting_hr
         self.recovery.set_medications(context.medications)
@@ -262,6 +266,8 @@ def main() -> None:
     parser.add_argument("--no-llm", action="store_true", help="Use templated wording instead of Gemini")
     parser.add_argument("--keep-time", action="store_true", help="Post sample timestamps instead of wall-clock time")
     parser.add_argument("--explain", action="store_true", help="Show EMR and clinical reasoning (for demos)")
+    parser.add_argument("--hardware", action="store_true",
+                        help="The recording is from the real glasses: skip irregular-rhythm signal scoring")
     args = parser.parse_args()
     if not args.csv and not args.scenario:
         parser.error("give a CSV path or --scenario")
@@ -291,7 +297,7 @@ def main() -> None:
         print(f"Patient {context.patient_id} - wording: {'Gemini ' + explainer.model if explainer.uses_llm else 'templates'}")
 
     samples = load_samples(args.csv, args.scenario)
-    pipeline = Pipeline(context, explainer)
+    pipeline = Pipeline(context, explainer, hardware=args.hardware)
     t0 = samples[0].t if samples else 0
     paced = iter_samples(samples, speed=args.speed) if not args.dry_run else iter(samples)
     last_check = time.monotonic()

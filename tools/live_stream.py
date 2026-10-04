@@ -141,7 +141,7 @@ def main() -> None:
     print(f"Patient: {context.patient_id} ({context.risk_tier} risk)")
     print(f"Wording: {'Gemini ' + explainer.model if explainer.uses_llm else 'templates'}")
 
-    pipeline = Pipeline(context, explainer)
+    pipeline = Pipeline(context, explainer, hardware=True)  # no irregular-rhythm scoring on real glasses
 
     try:
         read_serial_loop(pipeline, args.port, args.baud, args.base_url, args.dry_run, explainer)

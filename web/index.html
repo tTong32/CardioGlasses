@@ -3,9 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="color-scheme" content="light dark" />
-  <meta name="theme-color" content="#eef1ee" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#0e1311" media="(prefers-color-scheme: dark)" />
+  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#faf7f7" />
   <title>CardioGlasses</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,69 +25,40 @@
        One "answer panel" carries the level. Everything else is quiet neutral.
        ========================================================= */
     :root {
-      color-scheme: light dark;
+      color-scheme: light;
       --font: "CG Digits", "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
       --font-display: "Bricolage Grotesque", "Atkinson Hyperlegible Next", system-ui, sans-serif;
 
-      --bg: #eef1ee;
+      --bg: #faf7f7;
       --surface: #ffffff;
-      --surface-2: #f6f8f6;
-      --ink: #14201b;
-      --ink-2: #43514b;
-      --ink-3: #5f6c66;
-      --line: #d9dfdb;
-      --line-strong: #c3cbc6;
-      --accent: #17594c;
+      --surface-2: #f6f1f1;
+      --ink: #1a1212;
+      --ink-2: #5c4545;
+      --ink-3: #7a6565;
+      --line: #eadfdf;
+      --line-strong: #d4c4c4;
+      --accent: #c4161c;
       --accent-ink: #ffffff;
-      --focus: #17594c;
-      --scrim: rgba(12, 20, 17, 0.5);
-      --shadow: 0 1px 2px rgba(20, 32, 27, 0.06), 0 10px 28px -16px rgba(20, 32, 27, 0.28);
+      --focus: #c4161c;
+      --scrim: rgba(28, 8, 8, 0.48);
+      --shadow: 0 1px 2px rgba(80, 16, 16, 0.05), 0 10px 28px -16px rgba(80, 16, 16, 0.22);
 
       /* Level fields: panel background, its text, and the tone used for marks. */
-      --neutral-field: #e1e7e3; --neutral-ink: #23302b; --neutral-tone: #56645e;
-      --normal-field:  #d5ebe0; --normal-ink:  #0f3d31; --normal-tone:  #17694f;
-      --monitor-field: #f4e6c2; --monitor-ink: #4a3300; --monitor-tone: #8a5c00;
-      --notify-field:  #f8d9c4; --notify-ink:  #5a2205; --notify-tone:  #a8440f;
-      --escalate-field:#b3241c; --escalate-ink:#ffffff; --escalate-tone:#ffffff;
+      --neutral-field: #f3eeee; --neutral-ink: #3a2a2a; --neutral-tone: #8a7070;
+      --normal-field:  #ffffff; --normal-ink:  #1a1212; --normal-tone:  #c4161c;
+      --monitor-field: #fdecea; --monitor-ink: #6a1c18; --monitor-tone: #c4161c;
+      --notify-field:  #f8d4d0; --notify-ink:  #7a1410; --notify-tone:  #a10e14;
+      --escalate-field:#c4161c; --escalate-ink:#ffffff; --escalate-tone:#ffffff;
 
-      --warn-bg: #f6e9c8; --warn-ink: #573c00;
-      --bad-bg: #f7d9d5;  --bad-ink: #7d1712;
-      --info-bg: #e2e9e5; --info-ink: #2d3b35;
+      --warn-bg: #fdecea; --warn-ink: #7a1410;
+      --bad-bg: #f8d0cc;  --bad-ink: #8d1210;
+      --info-bg: #f6f1f1; --info-ink: #4a3a3a;
 
-      --ok: #17694f; --help: #b3241c;
+      --ok: #1a1212; --help: #c4161c;
 
-      --r-xl: 28px; --r-lg: 20px; --r-md: 14px;
+      --r-xl: 16px; --r-lg: 12px; --r-md: 8px;
       --gap: clamp(8px, 1.5dvh, 14px);
       --beat: 1s;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #0e1311;
-        --surface: #17201c;
-        --surface-2: #1d2722;
-        --ink: #edf2ef;
-        --ink-2: #bcc6c1;
-        --ink-3: #9aa69f;
-        --line: #26302b;
-        --line-strong: #36423c;
-        --accent: #86d8bf;
-        --accent-ink: #08201a;
-        --focus: #86d8bf;
-        --scrim: rgba(0, 0, 0, 0.62);
-        --shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 30px -16px rgba(0,0,0,.7);
-
-        --neutral-field: #1c2622; --neutral-ink: #e3ebe7; --neutral-tone: #a7b3ad;
-        --normal-field:  #12302a; --normal-ink:  #dff5ec; --normal-tone:  #86d8bf;
-        --monitor-field: #33290f; --monitor-ink: #fbecc5; --monitor-tone: #f0c466;
-        --notify-field:  #3c2214; --notify-ink:  #ffe3d1; --notify-tone:  #f6a46f;
-        --escalate-field:#8f1d16; --escalate-ink:#ffffff; --escalate-tone:#ffffff;
-
-        --warn-bg: #33290f; --warn-ink: #f6dd9c;
-        --bad-bg: #3d1714;  --bad-ink: #ffc2bb;
-        --info-bg: #1d2722; --info-ink: #cdd8d2;
-
-        --ok: #2f8f6f; --help: #c2362c;
-      }
     }
 
     /* ---------- Base ---------- */
@@ -130,12 +100,12 @@
     }
     .sound {
       margin-left: auto; display: inline-flex; align-items: center; gap: 7px;
-      min-height: 44px; padding: 6px 14px 6px 11px; border-radius: 999px; border: 1.5px solid transparent;
+      min-height: 44px; padding: 6px 14px 6px 11px; border-radius: 10px; border: 1.5px solid transparent;
       font-size: 0.92rem; font-weight: 800; white-space: nowrap;
     }
     .sound svg { width: 20px; height: 20px; }
-    .sound[data-mode="off"] { background: var(--accent); color: var(--accent-ink); }
-    .sound[data-mode="on"] { background: transparent; border-color: var(--line-strong); color: var(--ink-2); }
+    .sound[data-mode="on"] { background: var(--accent); color: var(--accent-ink); }
+    .sound[data-mode="off"] { background: transparent; border-color: var(--line-strong); color: var(--ink-2); }
     .sound[data-mode="missed"] { background: var(--monitor-tone); color: var(--bg); animation: nudge 2.4s ease-in-out infinite; }
     @keyframes nudge { 0%, 80%, 100% { transform: none; } 85% { transform: rotate(-3deg); } 90% { transform: rotate(3deg); } 95% { transform: rotate(-2deg); } }
     .sound .s-ico { display: none; }
@@ -162,6 +132,7 @@
       --field: var(--neutral-field); --pink: var(--neutral-ink); --tone: var(--neutral-tone);
       grid-area: panel; position: relative;
       background: var(--field); color: var(--pink);
+      border: 1px solid var(--line);
       border-radius: var(--r-xl);
       padding: clamp(14px, 2.4dvh, 24px) clamp(16px, 5vw, 24px) clamp(14px, 2.2dvh, 22px);
       display: grid; gap: clamp(8px, 1.5dvh, 14px);
@@ -170,7 +141,7 @@
     .panel[data-level="normal"]   { --field: var(--normal-field);   --pink: var(--normal-ink);   --tone: var(--normal-tone); }
     .panel[data-level="monitor"]  { --field: var(--monitor-field);  --pink: var(--monitor-ink);  --tone: var(--monitor-tone); }
     .panel[data-level="notify"]   { --field: var(--notify-field);   --pink: var(--notify-ink);   --tone: var(--notify-tone); }
-    .panel[data-level="escalate"] { --field: var(--escalate-field); --pink: var(--escalate-ink); --tone: var(--escalate-tone); }
+    .panel[data-level="escalate"] { --field: var(--escalate-field); --pink: var(--escalate-ink); --tone: var(--escalate-tone); border-color: var(--escalate-field); }
     .panel::after {
       content: ""; position: absolute; inset: -4px; border-radius: calc(var(--r-xl) + 4px);
       border: 3px solid var(--field); opacity: 0; pointer-events: none;
@@ -393,14 +364,14 @@
        ========================================================= */
     dialog.sheet {
       border: 0; padding: 0; width: 100%; max-width: 540px; max-height: 88dvh;
-      margin: auto auto 0; border-radius: 26px 26px 0 0;
+      margin: auto auto 0; border-radius: 16px 16px 0 0;
       background: var(--surface); color: var(--ink); box-shadow: var(--shadow); overflow: hidden;
     }
     dialog.sheet::backdrop { background: var(--scrim); }
     dialog.sheet[open] { animation: up 0.26s ease-out; }
     @keyframes up { from { transform: translateY(30px); opacity: 0.5; } to { transform: none; opacity: 1; } }
     @media (min-width: 700px), (orientation: landscape) and (max-height: 540px) {
-      dialog.sheet { margin: auto; border-radius: 26px; max-height: 90dvh; }
+      dialog.sheet { margin: auto; border-radius: 16px; max-height: 90dvh; }
     }
     .sheet-inner { display: flex; flex-direction: column; max-height: inherit; }
     .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 18px 12px; border-bottom: 1px solid var(--line); }
@@ -427,7 +398,7 @@
     .effects li { padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); border-left: 4px solid var(--accent); font-size: 0.97rem; }
     .effects li + li { margin-top: 8px; }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-    .chips li { padding: 6px 11px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font-size: 0.95rem; }
+    .chips li { padding: 6px 11px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); font-size: 0.95rem; }
     .chips li.key { border-color: var(--accent); font-weight: 700; }
     .meds li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); }
     .meds li:first-child { border-top: 0; }
@@ -471,7 +442,7 @@
     #ck-text { font-size: 1.08rem; color: var(--ink-2); max-width: 32ch; }
     .ck-actions { display: grid; gap: 12px; }
     .big {
-      width: 100%; min-height: clamp(60px, 9dvh, 76px); border-radius: 20px; border: 0;
+      width: 100%; min-height: clamp(60px, 9dvh, 76px); border-radius: 12px; border: 0;
       font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;
     }
     .big svg { width: 26px; height: 26px; }
@@ -920,7 +891,7 @@
       else if (state.lastReadingAt == null) when = "waiting";
       else {
         const secs = Math.max(0, Math.round((Date.now() - state.lastReadingAt) / 1000));
-        when = secs < 3 ? "just now" : secs + " s ago";
+        when = secs < 3 ? "just now" : ago(Date.now() - state.lastReadingAt);
       }
       bits.push(when);
       $("meta").textContent = r ? bits.join(" · ") : "No reading yet";
@@ -1438,6 +1409,23 @@
       renderBanner();
     }
 
+    // Stay in the smaller unit until there are 2 of the next one (120 s, 120 min, 48 hr).
+    // Show the remainder only while the leading unit is under 10.
+    function ago(ms) {
+      const total = Math.max(0, Math.round(ms / 1000));
+      const join = (n, unit, extra) => n + " " + unit + (extra || "") + " ago";
+      if (total < 120) return join(total, "s");
+      const minutes = Math.floor(total / 60);
+      const seconds = total % 60;
+      if (minutes < 120) return join(minutes, "min", minutes < 10 && seconds ? " " + seconds + " sec" : "");
+      const hours = Math.floor(total / 3600);
+      const minLeft = Math.floor((total % 3600) / 60);
+      if (hours < 48) return join(hours, "hr", hours < 10 && minLeft ? " " + minLeft + " min" : "");
+      const days = Math.floor(total / 86400);
+      const hourLeft = Math.floor((total % 86400) / 3600);
+      return join(days, days === 1 ? "day" : "days", days < 10 && hourLeft ? " " + hourLeft + " hr" : "");
+    }
+
     const ICONS = {
       offline: '<path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.8"/><path d="M19 12.9a10 10 0 0 0-2.3-1.7"/><path d="M12 20h.01"/>',
       signal: '<path d="M3 12h3l2-5 3 10 2-5h2"/><path d="M18 9l4 4M22 9l-4 4"/>',
@@ -1450,8 +1438,9 @@
       const stale = !state.mock || state.feedPaused ? (state.lastReadingAt != null && !state.storedOnly && Date.now() - state.lastReadingAt > OFFLINE_AFTER_MS) : false;
       if (stale || state.sensorOffline) {
         which = "offline"; kind = "bad";
-        const secs = Math.round((Date.now() - state.lastReadingAt) / 1000);
-        text = stale ? "Glasses not sending. No data for " + secs + " s." : "Glasses not connected.";
+        text = state.lastReadingAt != null
+          ? "Disconnected. " + ago(Date.now() - state.lastReadingAt) + "."
+          : "Disconnected.";
       } else if (state.patientSource === "cache") {
         which = "record"; kind = "info"; text = "Health record service unreachable. Using your last saved record.";
       } else if (state.patientSource === "local") {
