@@ -28,7 +28,7 @@ from pydantic import ValidationError
 
 from ai.contracts import PatientContext, Sample
 from ai.explainer import Explainer
-from ai.pipeline import CONTEXT_REFRESH_S, Pipeline, describe, fetch_context, offline_context, post_model
+from ai.pipeline import CONTEXT_REFRESH_S, CheckinListener, Pipeline, describe, fetch_context, offline_context, post_model
 
 ROOT = Path(__file__).resolve().parents[1]
 load_dotenv(ROOT / ".env")
@@ -51,6 +51,7 @@ def read_serial_loop(
 
         t0_ms: int | None = None
         bad_lines = 0
+        listener = None if dry_run else CheckinListener(base_url)
         last_context_refresh = time.monotonic()
 
         print(f"Streaming from {port} at {baud} baud. Ctrl+C to stop.\n", flush=True)
@@ -73,6 +74,12 @@ def read_serial_loop(
                 if bad_lines <= 3:
                     log.warning("Bad line: %s | %s", line[:80], str(exc).splitlines()[0])
                 continue
+
+            # A nod or shake answers a waiting "Are you OK?" check-in
+            if listener is not None:
+                answer = listener.feed(sample)
+                if answer:
+                    print(f"        -> head {'nod' if answer == 'ok' else 'shake'}: answered the check-in \"{answer}\"", flush=True)
 
             # Feed to pipeline
             step = pipeline.push(sample)
