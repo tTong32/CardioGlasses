@@ -384,16 +384,3 @@ def test_only_actionable_alerts_are_spoken(app_env, monkeypatch):
         client.post("/alerts", json=ALERT)
         assert next_alert(ws)["speak"] is True
     assert calls == [ALERT["voice_text"]]
-
-
-def test_checkin_asks_out_loud_to_nod(safety_env, monkeypatch):
-    monkeypatch.setenv("CHECKIN_TIMEOUT_S", "60")
-    monkeypatch.setenv("CHECKIN_PROMPT_DELAY_S", "0.1")
-    with TestClient(main.app) as client, client.websocket_connect("/ws") as ws:
-        client.post("/alerts", json=ALERT)
-        for _ in range(6):
-            msg = ws.receive_json()
-            if msg["type"] == "coach":
-                break
-        assert msg["type"] == "coach" and msg["data"]["kind"] == "checkin"
-        assert "Nod if you're fine" in msg["data"]["text"]

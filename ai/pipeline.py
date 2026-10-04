@@ -30,7 +30,6 @@ from ai.clinical import PROVISIONAL_MIN_STD, baseline_min_std, irregular_rhythm_
 from ai.contracts import Alert, PatientContext, Reading, Sample
 from ai.decision import POST_EXERTION_GRACE_S, Context, DecisionEngine
 from ai.explainer import Explainer
-from ai.gesture import GestureDetector
 from ai.processing import analyze_ppg, classify_activity, plain_signal_note
 from ai.recovery import RecoveryModel, RecoveryOutput
 from ai.replay import SCENARIOS, generate_scenario, iter_samples, load_csv
@@ -219,52 +218,6 @@ def post_model(base_url: str, path: str, model: Union[Reading, Alert]) -> None:
     response.raise_for_status()
 
 
-class CheckinListener:
-    """Answers a waiting "Are you OK?" check-in with the head: nod = OK, shake = help.
-
-    It polls the backend about once a second and only listens while a check-in is waiting,
-    so ordinary head movement never answers anything. The phone buttons still work.
-    """
-
-    POLL_S = 1.0
-
-    def __init__(self, base_url: str, get=requests.get, post=requests.post, clock=time.monotonic):
-        self.base_url = base_url.rstrip("/")
-        self._get, self._post, self._clock = get, post, clock
-        self.detector = GestureDetector()
-        self.checkin_id: Optional[str] = None
-        self._last_poll = float("-inf")
-
-    def _poll(self) -> None:
-        if self._clock() - self._last_poll < self.POLL_S:
-            return
-        self._last_poll = self._clock()
-        try:
-            current = self._get(f"{self.base_url}/checkin", timeout=3).json().get("current")
-        except (requests.RequestException, ValueError):
-            return
-        waiting = current["id"] if current and current.get("status") == "waiting" else None
-        if waiting != self.checkin_id:
-            self.detector.reset()  # only movements made after the question count
-            self.checkin_id = waiting
-
-    def feed(self, sample: Sample) -> Optional[str]:
-        """Returns "ok" or "help" when a gesture just answered the check-in."""
-        self._poll()
-        if self.checkin_id is None:
-            return None
-        gesture = self.detector.update(sample)
-        if gesture is None:
-            return None
-        answer = "ok" if gesture == "nod" else "help"
-        try:
-            self._post(f"{self.base_url}/checkin/{self.checkin_id}/respond", json={"answer": answer}, timeout=5)
-        except requests.RequestException:
-            return None
-        self.checkin_id = None
-        return answer
-
-
 def fetch_context(base_url: str) -> PatientContext:
     response = requests.get(f"{base_url.rstrip('/')}/patient", timeout=5)
     response.raise_for_status()
@@ -342,16 +295,8 @@ def main() -> None:
     t0 = samples[0].t if samples else 0
     paced = iter_samples(samples, speed=args.speed) if not args.dry_run else iter(samples)
     last_check = time.monotonic()
-    listener = None if args.dry_run else CheckinListener(args.base_url)
     try:
-        for sample in paced:
-            if listener is not None:
-                answer = listener.feed(sample)
-                if answer:
-                    print(f"        -> head {'nod' if answer == 'ok' else 'shake'}: answered the check-in \"{answer}\"", flush=True)
-            step = pipeline.push(sample)
-            if step is None:
-                continue
+        for step in pipeline.run(paced):
             print(describe(step, (step.reading.t - t0) / 1000.0), flush=True)
 
             # Show alert reasoning in explain mode

@@ -478,8 +478,6 @@
     #ck-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, 6.4dvh, 3rem); line-height: 1.05; letter-spacing: -0.02em; }
     #ck-text { font-size: 1.08rem; color: var(--ink-2); max-width: 32ch; }
     .ck-actions { display: grid; gap: 12px; }
-    .ck-hint { text-align: center; font-size: 0.98rem; color: var(--ink-2); }
-    .ck-hint b { color: var(--ink); font-weight: 800; }
     .big {
       width: 100%; min-height: clamp(60px, 9dvh, 76px); border-radius: 20px; border: 0;
       font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;
@@ -698,7 +696,6 @@
         <p id="ck-text">Your heart rate has stayed high. If we don't hear from you, we'll let Alex know.</p>
       </div>
       <div class="ck-actions">
-        <p class="ck-hint" id="ck-hint">Or answer with your head: <b>nod</b> if you're OK, <b>shake</b> if you need help.</p>
         <button type="button" class="big ok" id="checkin-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>I'm OK</button>
         <button type="button" class="big help" id="checkin-help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5"/><path d="M12 17.5h.01"/></svg>I need help</button>
         <button type="button" class="big plain" id="checkin-close" hidden>Close</button>
@@ -1308,7 +1305,7 @@
       const sheet = $("checkin-sheet");
       const who = state.caregiverName || "your caregiver";
       const waiting = c.status === "waiting";
-      $("checkin-ok").hidden = $("checkin-help").hidden = $("ck-hint").hidden = !waiting;
+      $("checkin-ok").hidden = $("checkin-help").hidden = !waiting;
       $("checkin-close").hidden = waiting;
       $("ck-ring").hidden = !waiting;
       $("ck-icon").hidden = waiting;
