@@ -28,14 +28,14 @@ def test_elevated_story_escalates_in_order_then_recovers():
     story = levels("elevated")
     assert [level for _, level in story] == ["monitor", "notify", "normal"]
     monitor_at, notify_at, normal_at = (t for t, _ in story)
-    assert 100 <= monitor_at < notify_at <= monitor_at + 32
+    assert 25 <= monitor_at < notify_at <= monitor_at + 17
     assert normal_at > notify_at
 
 
 def test_notify_only_after_persist_threshold():
     notify = next(e for e in demo_sim.build_timeline("elevated", CONTEXT) if e.alert and e.alert.level == "notify")
     reading = notify.alert.reading
-    assert reading.persist_s >= CONTEXT.config.persist_s
+    assert reading.persist_s >= CONTEXT.config.persist_s * demo_sim.ALERT_PACE
     assert reading.activity == "resting"
     assert reading.quality >= CONTEXT.config.min_quality
     assert reading.deviation >= CONTEXT.config.deviation_trigger

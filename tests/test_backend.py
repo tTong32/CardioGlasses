@@ -384,3 +384,31 @@ def test_only_actionable_alerts_are_spoken(app_env, monkeypatch):
         client.post("/alerts", json=ALERT)
         assert next_alert(ws)["speak"] is True
     assert calls == [ALERT["voice_text"]]
+
+
+def test_simulator_pauses_the_glasses_until_it_hands_back(app_env, monkeypatch):
+    finchnode_down(monkeypatch)
+    sim = {"X-CardioGlasses-Source": "sim"}
+    glasses = {**READING, "t": READING["t"] + 1000, "hr": 75}
+    with TestClient(main.app) as client:
+        main.source_gate.release()
+        client.post("/readings", json=READING, headers=sim)
+        assert client.get("/status").json()["data_source"] == "sim"
+        assert client.post("/readings", json=glasses).status_code == 200  # the bridge sees no error
+        assert client.post("/alerts", json=ALERT).status_code == 200
+        assert [r["hr"] for r in client.get("/readings").json()] == [104]
+        assert client.get("/alerts").json() == []
+        client.post("/source/live")
+        assert client.get("/status").json()["data_source"] == "live"
+        client.post("/readings", json=glasses)
+        assert [r["hr"] for r in client.get("/readings").json()] == [75, 104]
+
+
+def test_glasses_come_back_if_the_simulator_dies(app_env, monkeypatch):
+    finchnode_down(monkeypatch)
+    with TestClient(main.app) as client:
+        client.post("/source/sim")
+        assert main.source_gate.sim_active
+        main.source_gate.sim_until = 0.0  # as if SIM_HOLD_S passed with no simulator posts
+        client.post("/readings", json=READING)
+        assert len(client.get("/readings").json()) == 1

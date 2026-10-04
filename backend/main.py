@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Header, HTTPException, Query, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -235,8 +235,55 @@ def health() -> dict:
     return {"ok": True}
 
 
+# While the demo simulator runs, the glasses' posts are accepted but dropped, so the two
+# streams never mix on the dashboard. The simulator marks its posts with this header and
+# hands the stream back when it ends; if it dies, the glasses take over after SIM_HOLD_S.
+SOURCE_HEADER = "X-CardioGlasses-Source"
+SIM_HOLD_S = 30.0
+
+
+class SourceGate:
+    def __init__(self) -> None:
+        self.sim_until = 0.0
+
+    def admit(self, source: str | None) -> bool:
+        """Whether to use this post. A simulator post (re)claims the stream."""
+        if source == "sim":
+            self.sim_until = time.monotonic() + SIM_HOLD_S
+            return True
+        return not self.sim_active
+
+    @property
+    def sim_active(self) -> bool:
+        return time.monotonic() < self.sim_until
+
+    def release(self) -> None:
+        self.sim_until = 0.0
+
+    def public(self) -> dict:
+        return {"data_source": "sim" if self.sim_active else "live"}
+
+
+source_gate = SourceGate()
+
+
+@app.post("/source/sim")
+def claim_for_sim() -> dict:
+    """The simulator holds the stream; it calls this again to keep holding through a dropout."""
+    source_gate.admit("sim")
+    return source_gate.public()
+
+
+@app.post("/source/live")
+def release_to_glasses() -> dict:
+    source_gate.release()
+    return source_gate.public()
+
+
 @app.post("/readings", response_model=Reading)
-async def post_reading(reading: Reading) -> Reading:
+async def post_reading(reading: Reading, x_cardioglasses_source: str | None = Header(None)) -> Reading:
+    if not source_gate.admit(x_cardioglasses_source):
+        return reading  # the simulator has the stream: OK for the sender, but not used
     _insert("readings", reading.t, reading.model_dump_json())
     await hub.broadcast({"type": "reading", "data": reading.model_dump(mode="json")})
     await coach.on_reading(reading)
@@ -295,7 +342,9 @@ SPOKEN_LEVELS = ("notify", "escalate")
 
 
 @app.post("/alerts", response_model=Alert)
-async def post_alert(alert: Alert) -> Alert:
+async def post_alert(alert: Alert, x_cardioglasses_source: str | None = Header(None)) -> Alert:
+    if not source_gate.admit(x_cardioglasses_source):
+        return alert  # the simulator has the stream: OK for the sender, but not used
     _insert("alerts", alert.t, alert.model_dump_json())
     spoken = alert.level in SPOKEN_LEVELS
     # Voice first so the sound and the card arrive together.
@@ -356,6 +405,7 @@ def status() -> dict:
     return {
         "patient_source": patient.source,
         "patient_error": patient.error,
+        **source_gate.public(),
         "patient_loaded_at": int(patient.loaded_at * 1000),
         "record_effects": clinical.effects(patient.context),
         "patient_name": patient_display_name(),

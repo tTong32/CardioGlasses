@@ -33,6 +33,10 @@ STEP_S = 2
 BASELINE_HR = 68.0
 BASELINE_SD = 8.0  # typical day-to-day resting spread; keeps deviation in plausible SD units
 RECOVERY_TAU_S = 35.0
+# The alert stories (elevated, escalate) run at half the real timings so the demo gets to
+# the point: notify after persist_s / 2 of high heart rate, escalate after 1.5 x persist_s,
+# and the heart rate settles twice as fast. The real pipeline's thresholds are unchanged.
+ALERT_PACE = 0.5
 CARDIAC_TERMS = ("atrial fibrillation", "heart failure", "coronary", "arrhythmia", "cardiomyopathy")
 
 SCENARIOS = {
@@ -58,6 +62,7 @@ class Phase:
     signal_status: str = "ok"
     send: bool = True
     quiet: bool = False  # expected (e.g. cooling down after exercise): never counts toward an alert
+    tau_s: float = RECOVERY_TAU_S  # for shape "recovery"
 
 
 def phases_for(scenario: str) -> list[Phase]:
@@ -94,13 +99,14 @@ def phases_for(scenario: str) -> list[Phase]:
             Phase(200, "resting", 104, 80, quality=0.3, signal_status="poor"),
             Phase(260, "resting", 80, BASELINE_HR + 2, shape="recovery"),
         ]
-    high_until = 230 if scenario == "escalate" else 150
+    # Short run-up so the warning comes quickly: 10 s of rest, 15 s of exertion.
+    high_until = 90 if scenario == "escalate" else 50
     return [
-        rest,
-        exert,
+        Phase(10, "resting", BASELINE_HR, BASELINE_HR),
+        Phase(25, "moving", BASELINE_HR, 112),
         Phase(high_until, "resting", 108, 104),
-        Phase(high_until + 90, "resting", 104, BASELINE_HR + 2, shape="recovery"),
-        Phase(high_until + 120, "resting", BASELINE_HR + 2, BASELINE_HR),
+        Phase(high_until + 45, "resting", 104, BASELINE_HR + 2, shape="recovery", tau_s=RECOVERY_TAU_S * ALERT_PACE),
+        Phase(high_until + 60, "resting", BASELINE_HR + 2, BASELINE_HR),
     ]
 
 
@@ -116,7 +122,7 @@ def _phase_at(phases: list[Phase], s: float) -> tuple[Phase, float]:
 def _hr(phase: Phase, start: float, s: float) -> float:
     elapsed = s - start
     if phase.shape == "recovery":
-        return phase.hr_to + (phase.hr_from - phase.hr_to) * math.exp(-elapsed / RECOVERY_TAU_S)
+        return phase.hr_to + (phase.hr_from - phase.hr_to) * math.exp(-elapsed / phase.tau_s)
     frac = elapsed / max(phase.end_s - start, 1e-9)
     return phase.hr_from + (phase.hr_to - phase.hr_from) * frac
 
@@ -225,7 +231,7 @@ def build_timeline(scenario: str, context: PatientContext, t0_ms: int = 0, seed:
                 recovery_start, peak_hr = s, phase.hr_from
             drop_60 = (peak_hr or hr) - hr if s - recovery_start >= 60 else None
             recovery = {
-                "recovery_tau_s": RECOVERY_TAU_S,
+                "recovery_tau_s": phase.tau_s,
                 "hr_drop_60s": round(drop_60, 1) if drop_60 is not None else None,
                 "recovery_ratio": 1.0,
                 "recovery_percentile": 45.0,
@@ -250,9 +256,10 @@ def build_timeline(scenario: str, context: PatientContext, t0_ms: int = 0, seed:
         )
 
         new_level: Level = level
-        if persist >= 3 * cfg.persist_s:
+        notify_after = cfg.persist_s * ALERT_PACE
+        if persist >= 3 * notify_after:
             new_level = "escalate"
-        elif persist >= cfg.persist_s:
+        elif persist >= notify_after:
             new_level = "notify" if level != "escalate" else level
         elif persist > 0 and level == "normal":
             new_level = "monitor"
@@ -265,15 +272,57 @@ def build_timeline(scenario: str, context: PatientContext, t0_ms: int = 0, seed:
     return events
 
 
+# Marks every post as the simulator's, so the backend drops the glasses' posts meanwhile.
+SOURCE_HEADER = {"X-CardioGlasses-Source": "sim"}
+
+
 def _post(base_url: str, path: str, model) -> None:
-    response = requests.post(f"{base_url}{path}", json=model.model_dump(mode="json"), timeout=15)
+    response = requests.post(f"{base_url}{path}", json=model.model_dump(mode="json"), headers=SOURCE_HEADER, timeout=15)
     response.raise_for_status()
+
+
+def _hold_stream(base_url: str) -> bool:
+    """Tell the backend the simulator has the stream. False on an older backend without the switch."""
+    try:
+        response = requests.post(f"{base_url}/source/sim", headers=SOURCE_HEADER, timeout=5)
+    except requests.RequestException:
+        return False
+    return response.ok
+
+
+def _release_stream(base_url: str) -> None:
+    try:
+        requests.post(f"{base_url}/source/live", timeout=5)
+    except requests.RequestException:
+        pass  # the backend takes the glasses back on its own after a short wait
 
 
 def run(scenario: str, base_url: str, speed: float, loop: bool) -> None:
     base_url = base_url.rstrip("/")
     context = PatientContext.model_validate(requests.get(f"{base_url}/patient", timeout=5).json())
+    if _hold_stream(base_url):
+        print("Glasses data is paused on the backend while this runs.")
+    else:
+        print("This backend can't pause the glasses: if they're streaming, both will show on the dashboard.")
     print(f"Scenario '{scenario}' at {speed}x for patient {context.patient_id}. Ctrl+C to stop.")
+    state = {"level": "normal", "reading": None}
+    try:
+        _play(scenario, base_url, speed, loop, context, state)
+    except KeyboardInterrupt:
+        # Stopped mid-story: settle the dashboard so a waiting check-in can't text the caregiver.
+        if state["level"] != "normal" and state["reading"] is not None:
+            reading = state["reading"].model_copy(update={"t": int(time.time() * 1000)})
+            try:
+                _post(base_url, "/alerts", make_alert("normal", reading, context))
+            except requests.RequestException:
+                pass
+        raise
+    finally:
+        _release_stream(base_url)
+        print("Back to the glasses.")
+
+
+def _play(scenario: str, base_url: str, speed: float, loop: bool, context: PatientContext, state: dict) -> None:
     while True:
         started = time.monotonic()
         for event in build_timeline(scenario, context, seed=random.randrange(1 << 30)):
@@ -282,19 +331,22 @@ def run(scenario: str, base_url: str, speed: float, loop: bool) -> None:
                 time.sleep(delay)
             if event.action:
                 path = _ACTION_PATHS[event.action]
-                requests.post(f"{base_url}{path}", timeout=15).raise_for_status()
+                requests.post(f"{base_url}{path}", headers=SOURCE_HEADER, timeout=15).raise_for_status()
                 print(f"{event.offset_s:5.0f}s  -> {event.action.replace('_', ' ')}")
             if event.reading is None:
+                _hold_stream(base_url)  # keep the glasses out during the dropout too
                 print(f"{event.offset_s:5.0f}s  (sensor dropout, nothing sent)")
                 continue
             # Wall-clock time so the dashboard's "updated" and offline checks are honest.
             now_ms = int(time.time() * 1000)
             reading = event.reading.model_copy(update={"t": now_ms})
             _post(base_url, "/readings", reading)
+            state["reading"] = reading
             line = f"{event.offset_s:5.0f}s  hr {reading.hr:5.1f}  {reading.activity:7}  dev {reading.deviation:4.1f}  persist {reading.persist_s:3.0f}s"
             if event.alert is not None:
                 alert = event.alert.model_copy(update={"t": now_ms, "reading": reading})
                 _post(base_url, "/alerts", alert)
+                state["level"] = alert.level
                 line += f"  -> ALERT {alert.level.upper()}: {alert.headline}"
             print(line, flush=True)
         if not loop:
