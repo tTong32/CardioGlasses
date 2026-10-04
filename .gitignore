@@ -8,6 +8,10 @@ node_modules/
 data/*.csv
 !data/sample_rest.csv
 !data/sample_elevated.csv
+!data/rec_*.csv
+!data/rec_*.jsonl
+data/live_*.jsonl
+hw/firmware/.pio/
 data/audio/*
 !data/audio/fallback_*.mp3
 data/finchnode_cache.json

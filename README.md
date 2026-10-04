@@ -69,6 +69,18 @@ python -m tools.serial_check --list
 python -m tools.serial_check --port COM5 --seconds 120 --out data/rec_rest.csv
 ```
 
+### Firmware + BLE bridge (hardware)
+
+`hw/firmware/` is the ESP32 (MAX30102 + MPU6050, PlatformIO) firmware; `hw/bridge/` is the
+laptop side (Python/`bleak`) that turns its BLE stream into Contract A. Full pipeline spec,
+wiring, and integration status: `hw/README.md`.
+
+```bash
+pip install -r hw/requirements.txt
+python -m hw.bridge.live_bridge                                              # live, streams + saves for replay
+python -m hw.bridge.convert_firmware_csv hw/bridge/recordings/ear_motion1.csv --out data/rec_rest  # a recorded session
+```
+
 ### AI pipeline
 
 Turns samples into Readings every 2 s (10 s analysis window): heart rate and beat intervals from the PPG, an honest 0-1 quality score, resting/moving from the IMU, a resting baseline (frozen during episodes), recovery after exertion, and a rules-based alert level. Gemini (`GEMINI_MODEL`, default `gemini-flash-lite-latest`) writes the wording and, when a monitor, notify, or escalate alert is about to fire on a borderline pulse, a signal-check line for the dashboard. The check does not block the alert. Set `SIGNAL_CHECK_DELAY=1` to let one "artifact" answer hold a monitor or notify for a single reading; escalate is never held. Templates take over if Gemini is slow or unavailable. A weak window also carries `signal_note`, shown on the dashboard, and that note is included in the wording.
