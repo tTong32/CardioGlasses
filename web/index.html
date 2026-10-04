@@ -4,365 +4,489 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="color-scheme" content="light dark" />
-  <meta name="theme-color" content="#f5f1ea" media="(prefers-color-scheme: light)" />
-  <meta name="theme-color" content="#121615" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#eef1ee" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#0e1311" media="(prefers-color-scheme: dark)" />
   <title>CardioGlasses</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&display=swap" />
   <style>
-    /* Digits only (U+0030-0039) from the system font: Atkinson's zero is slashed, so "104"
-       would read "1Ø4". Letters keep Atkinson. If none of these exist, Atkinson is used. */
+    /* Digits in body text come from the system face: Atkinson's zero is slashed ("1Ø4"). */
     @font-face {
       font-family: "CG Digits"; font-weight: 400 500; unicode-range: U+0030-0039;
-      src: local("Segoe UI"), local("SegoeUI"), local("Roboto"), local("Roboto-Regular"),
-           local("Helvetica Neue"), local("HelveticaNeue"), local("Arial"), local("ArialMT");
+      src: local("Segoe UI"), local("SegoeUI"), local("Roboto"), local("Roboto-Regular"), local("Helvetica Neue"), local("Arial");
     }
     @font-face {
       font-family: "CG Digits"; font-weight: 600 900; unicode-range: U+0030-0039;
-      src: local("Segoe UI Semibold"), local("SegoeUI-Semibold"), local("Roboto Medium"), local("Roboto-Medium"),
-           local("Helvetica Neue Medium"), local("HelveticaNeue-Medium"), local("Arial Bold"), local("Arial-BoldMT");
+      src: local("Segoe UI Semibold"), local("SegoeUI-Semibold"), local("Roboto Medium"), local("Roboto-Medium"), local("Helvetica Neue Medium"), local("Arial Bold");
     }
 
-    /* ---------- Tokens ---------- */
-    /* Layout: everything that matters on one phone screen (one main card + last 3 alerts);
-       details open as bottom sheets instead of growing the page. */
+    /* =========================================================
+       Tokens
+       One "answer panel" carries the level. Everything else is quiet neutral.
+       ========================================================= */
     :root {
       color-scheme: light dark;
-      --font-num: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      --font-display: "Source Serif 4", Georgia, "Times New Roman", serif;
-      --font: "CG Digits", "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font: "CG Digits", "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --font-display: "Bricolage Grotesque", "Atkinson Hyperlegible Next", system-ui, sans-serif;
 
-      --bg: #f5f1ea;
-      --surface: #fffdf9;
-      --ink: #1c2422;
-      --ink-2: #4c5753;
-      --ink-3: #6b7570;
-      --rule: #e4ddd1;
-      --rule-strong: #d3cabb;
-      --accent: #1d5f58;
+      --bg: #eef1ee;
+      --surface: #ffffff;
+      --surface-2: #f6f8f6;
+      --ink: #14201b;
+      --ink-2: #43514b;
+      --ink-3: #5f6c66;
+      --line: #d9dfdb;
+      --line-strong: #c3cbc6;
+      --accent: #17594c;
       --accent-ink: #ffffff;
-      --accent-soft: #e2eeeb;
-      --focus: #1d5f58;
-      --shadow: 0 1px 2px rgba(60, 45, 20, 0.06), 0 8px 24px -12px rgba(60, 45, 20, 0.18);
-      --scrim: rgba(28, 36, 34, 0.45);
+      --focus: #17594c;
+      --scrim: rgba(12, 20, 17, 0.5);
+      --shadow: 0 1px 2px rgba(20, 32, 27, 0.06), 0 10px 28px -16px rgba(20, 32, 27, 0.28);
 
-      --normal: #22695a;    --normal-tint: #e3efe9;
-      --monitor: #8a5a00;   --monitor-tint: #f5ead3;
-      --notify: #a4461a;    --notify-tint: #f7e3d6;
-      --escalate: #a52520;  --escalate-tint: #f8dcd8;
-      --neutral: #5d6864;   --neutral-tint: #ebe6dd;
+      /* Level fields: panel background, its text, and the tone used for marks. */
+      --neutral-field: #e1e7e3; --neutral-ink: #23302b; --neutral-tone: #56645e;
+      --normal-field:  #d5ebe0; --normal-ink:  #0f3d31; --normal-tone:  #17694f;
+      --monitor-field: #f4e6c2; --monitor-ink: #4a3300; --monitor-tone: #8a5c00;
+      --notify-field:  #f8d9c4; --notify-ink:  #5a2205; --notify-tone:  #a8440f;
+      --escalate-field:#b3241c; --escalate-ink:#ffffff; --escalate-tone:#ffffff;
 
-      --warn-bg: #f6ecd6;   --warn-ink: #6b4600;  --warn-edge: #c9952e;
-      --bad-bg: #f8e0dc;    --bad-ink: #8a1f1a;   --bad-edge: #c4544c;
+      --warn-bg: #f6e9c8; --warn-ink: #573c00;
+      --bad-bg: #f7d9d5;  --bad-ink: #7d1712;
+      --info-bg: #e2e9e5; --info-ink: #2d3b35;
 
-      --radius-lg: 28px;
-      --radius: 18px;
+      --ok: #17694f; --help: #b3241c;
+
+      --r-xl: 28px; --r-lg: 20px; --r-md: 14px;
+      --gap: clamp(8px, 1.5dvh, 14px);
       --beat: 1s;
     }
     @media (prefers-color-scheme: dark) {
       :root {
-        --bg: #121615;
-        --surface: #1a201e;
-        --ink: #ece7de;
-        --ink-2: #b9b5ac;
-        --ink-3: #959189;
-        --rule: #2a312e;
-        --rule-strong: #3a423e;
-        --accent: #7fd0bf;
-        --accent-ink: #0d1f1b;
-        --accent-soft: #1d2f2b;
-        --focus: #7fd0bf;
-        --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 30px -14px rgba(0, 0, 0, 0.6);
-        --scrim: rgba(0, 0, 0, 0.6);
+        --bg: #0e1311;
+        --surface: #17201c;
+        --surface-2: #1d2722;
+        --ink: #edf2ef;
+        --ink-2: #bcc6c1;
+        --ink-3: #9aa69f;
+        --line: #26302b;
+        --line-strong: #36423c;
+        --accent: #86d8bf;
+        --accent-ink: #08201a;
+        --focus: #86d8bf;
+        --scrim: rgba(0, 0, 0, 0.62);
+        --shadow: 0 1px 2px rgba(0,0,0,.35), 0 12px 30px -16px rgba(0,0,0,.7);
 
-        --normal: #7fd0bf;    --normal-tint: #17302a;
-        --monitor: #e9b960;   --monitor-tint: #322818;
-        --notify: #f29d68;    --notify-tint: #36241a;
-        --escalate: #f4908a;  --escalate-tint: #3b1d1c;
-        --neutral: #a9aaa3;   --neutral-tint: #212725;
+        --neutral-field: #1c2622; --neutral-ink: #e3ebe7; --neutral-tone: #a7b3ad;
+        --normal-field:  #12302a; --normal-ink:  #dff5ec; --normal-tone:  #86d8bf;
+        --monitor-field: #33290f; --monitor-ink: #fbecc5; --monitor-tone: #f0c466;
+        --notify-field:  #3c2214; --notify-ink:  #ffe3d1; --notify-tone:  #f6a46f;
+        --escalate-field:#8f1d16; --escalate-ink:#ffffff; --escalate-tone:#ffffff;
 
-        --warn-bg: #30271a;   --warn-ink: #f0d08e;  --warn-edge: #b7883a;
-        --bad-bg: #371d1b;    --bad-ink: #f6b1aa;   --bad-edge: #c4544c;
+        --warn-bg: #33290f; --warn-ink: #f6dd9c;
+        --bad-bg: #3d1714;  --bad-ink: #ffc2bb;
+        --info-bg: #1d2722; --info-ink: #cdd8d2;
+
+        --ok: #2f8f6f; --help: #c2362c;
       }
     }
 
     /* ---------- Base ---------- */
     *, *::before, *::after { box-sizing: border-box; }
-    html { -webkit-text-size-adjust: 100%; height: 100%; }
+    html { -webkit-text-size-adjust: 100%; }
+    html, body { height: 100%; }
     body {
-      margin: 0; background: var(--bg); color: var(--ink); height: 100%; overflow: hidden;
-      font-family: var(--font); font-size: 1.0625rem; line-height: 1.5;
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: var(--font); font-size: 1.0625rem; line-height: 1.45;
       -webkit-font-smoothing: antialiased;
     }
-    /* Exactly one screen tall: the card keeps its size, recent alerts take what is left,
-       and fit() (below) trims rows or squeezes text so nothing ever scrolls. */
-    .shell {
-      max-width: 480px; margin: 0 auto;
-      height: 100vh; height: 100dvh;
-      display: flex; flex-direction: column;
-      padding: max(4px, env(safe-area-inset-top)) 16px max(10px, env(safe-area-inset-bottom));
-    }
-    main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: clamp(8px, 1.4dvh, 12px); margin-top: clamp(4px, 1dvh, 8px); }
-    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3, p, ul, dl, dd { margin: 0; padding: 0; }
+    ul { list-style: none; }
     svg { display: block; flex: none; }
     [hidden] { display: none !important; }
-    :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 8px; }
-    button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; }
+    button { font: inherit; color: inherit; -webkit-tap-highlight-color: transparent; cursor: pointer; }
+    :focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; border-radius: 10px; }
+    .num { font-family: var(--font-display); font-variant-numeric: tabular-nums lining-nums; }
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+    /* =========================================================
+       App frame: exactly one screen. Five rows; only the feed row flexes.
+       ========================================================= */
+    .app {
+      height: 100vh; height: 100dvh; max-width: 540px; margin: 0 auto;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      grid-template-areas: "top" "banner" "panel" "feed" "dock";
+      row-gap: var(--gap);
+      padding: max(6px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    }
 
     /* ---------- Top bar ---------- */
-    .top { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding-block: 2px; }
-    .brand {
-      display: flex; align-items: center; gap: 8px; min-width: 0;
-      font-family: var(--font-display); font-size: 1.02rem; font-weight: 700; color: var(--ink);
-    }
-    .brand span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    @media (max-width: 389px) { .brand span { display: none; } }
-    .brand svg { color: var(--accent); }
-    .top-right { display: flex; align-items: center; gap: 8px; flex: none; margin-left: auto; }
+    .top { grid-area: top; display: flex; align-items: center; gap: 8px; min-height: 44px; padding-inline: 4px; }
     .conn {
-      display: inline-flex; align-items: center; gap: 7px;
-      font-size: 0.85rem; font-weight: 600; color: var(--ink-2); white-space: nowrap;
+      display: inline-flex; align-items: center; gap: 7px; min-width: 0;
+      font-size: 0.86rem; font-weight: 700; color: var(--ink-2); white-space: nowrap;
     }
-    .conn::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--neutral); opacity: 0.7; }
-    .conn.live::before { background: var(--normal); opacity: 1; box-shadow: 0 0 0 3px var(--normal-tint); }
-    .conn.warn { color: var(--monitor); }
-    .conn.warn::before { background: var(--monitor); opacity: 1; }
-
-    .pill {
-      display: inline-flex; align-items: center; gap: 6px;
-      min-height: 40px; padding: 6px 11px; border-radius: 999px;
-      border: 1.5px solid transparent; font-size: 0.85rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+    .conn i { width: 9px; height: 9px; border-radius: 50%; background: var(--neutral-tone); flex: none; }
+    .conn.live i { background: var(--normal-tone); box-shadow: 0 0 0 3px color-mix(in srgb, var(--normal-tone) 25%, transparent); }
+    .conn.warn { color: var(--monitor-tone); }
+    .conn.warn i { background: var(--monitor-tone); }
+    .demo-btn {
+      min-height: 32px; padding: 3px 10px; border-radius: 8px; border: 1.5px dashed var(--line-strong);
+      background: transparent; color: var(--ink-3); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em;
     }
-    .pill svg { width: 18px; height: 18px; }
-    .pill.primary { background: var(--accent); color: var(--accent-ink); }
-    .pill.quiet { background: transparent; border-color: var(--rule-strong); color: var(--ink-2); }
-    .pill.missed { background: var(--monitor); color: var(--surface); }
-    #sound[aria-pressed="false"] .ico-on, #sound[aria-pressed="true"] .ico-off { display: none; }
+    .sound {
+      margin-left: auto; display: inline-flex; align-items: center; gap: 7px;
+      min-height: 44px; padding: 6px 14px 6px 11px; border-radius: 999px; border: 1.5px solid transparent;
+      font-size: 0.92rem; font-weight: 800; white-space: nowrap;
+    }
+    .sound svg { width: 20px; height: 20px; }
+    .sound[data-mode="off"] { background: var(--accent); color: var(--accent-ink); }
+    .sound[data-mode="on"] { background: transparent; border-color: var(--line-strong); color: var(--ink-2); }
+    .sound[data-mode="missed"] { background: var(--monitor-tone); color: var(--bg); animation: nudge 2.4s ease-in-out infinite; }
+    @keyframes nudge { 0%, 80%, 100% { transform: none; } 85% { transform: rotate(-3deg); } 90% { transform: rotate(3deg); } 95% { transform: rotate(-2deg); } }
+    .sound .s-ico { display: none; }
+    .sound[data-mode="off"] .s-off, .sound[data-mode="on"] .s-on, .sound[data-mode="missed"] .s-missed { display: block; }
 
-    /* ---------- Banners ---------- */
+    /* ---------- Banner (one slot; most important wins) ---------- */
     .banner {
-      flex: none; display: flex; align-items: flex-start; gap: 10px;
-      margin-top: 6px; padding: 8px 12px;
-      border-radius: 14px; border-left: 4px solid var(--warn-edge);
+      grid-area: banner; display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: var(--r-md);
+      font-size: 0.92rem; font-weight: 700; line-height: 1.3;
       background: var(--warn-bg); color: var(--warn-ink);
-      font-size: 0.92rem; font-weight: 600; line-height: 1.35;
+      animation: drop 0.3s ease-out;
     }
-    .banner:not([hidden]) { animation: banner-in 0.3s ease-out; }
-    @keyframes banner-in { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-    .banner.bad { background: var(--bad-bg); color: var(--bad-ink); border-left-color: var(--bad-edge); }
-    /* Only the most important banner shows (offline, then weak signal, then record source). */
-    .banner:not([hidden]) ~ .banner { display: none; }
+    .banner[data-kind="bad"] { background: var(--bad-bg); color: var(--bad-ink); }
+    .banner[data-kind="info"] { background: var(--info-bg); color: var(--info-ink); font-weight: 600; }
+    .banner svg { width: 22px; height: 22px; }
     .banner span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .banner svg { width: 20px; height: 20px; margin-top: 1px; }
+    @keyframes drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 
-    /* ---------- The main card: everything at a glance ---------- */
-    .hero {
-      --tone: var(--neutral); --tint: var(--neutral-tint);
-      flex: none; padding: clamp(12px, 2.2dvh, 20px) clamp(14px, 4.5vw, 20px);
-      border-radius: var(--radius-lg); background: var(--tint);
-      transition: background-color 0.6s ease; position: relative;
+    /* =========================================================
+       The answer panel
+       ========================================================= */
+    .panel {
+      --field: var(--neutral-field); --pink: var(--neutral-ink); --tone: var(--neutral-tone);
+      grid-area: panel; position: relative;
+      background: var(--field); color: var(--pink);
+      border-radius: var(--r-xl);
+      padding: clamp(14px, 2.4dvh, 24px) clamp(16px, 5vw, 24px) clamp(14px, 2.2dvh, 22px);
+      display: grid; gap: clamp(8px, 1.5dvh, 14px);
+      transition: background-color 0.5s ease, color 0.5s ease;
     }
-    .hero::after {
-      content: ""; position: absolute; inset: 0; border-radius: inherit;
-      border: 2px solid var(--tone); opacity: 0; pointer-events: none;
+    .panel[data-level="normal"]   { --field: var(--normal-field);   --pink: var(--normal-ink);   --tone: var(--normal-tone); }
+    .panel[data-level="monitor"]  { --field: var(--monitor-field);  --pink: var(--monitor-ink);  --tone: var(--monitor-tone); }
+    .panel[data-level="notify"]   { --field: var(--notify-field);   --pink: var(--notify-ink);   --tone: var(--notify-tone); }
+    .panel[data-level="escalate"] { --field: var(--escalate-field); --pink: var(--escalate-ink); --tone: var(--escalate-tone); }
+    .panel::after {
+      content: ""; position: absolute; inset: -4px; border-radius: calc(var(--r-xl) + 4px);
+      border: 3px solid var(--field); opacity: 0; pointer-events: none;
     }
-    .hero.calling::after { animation: call 1.1s ease-out 1; }
-    .hero.calling[data-level="escalate"]::after { animation-iteration-count: 3; }
-    @keyframes call { from { opacity: 0.7; transform: scale(1); } to { opacity: 0; transform: scale(1.05); } }
-    .hero[data-level="normal"]   { --tone: var(--normal);   --tint: var(--normal-tint); }
-    .hero[data-level="monitor"]  { --tone: var(--monitor);  --tint: var(--monitor-tint); }
-    .hero[data-level="notify"]   { --tone: var(--notify);   --tint: var(--notify-tint); }
-    .hero[data-level="escalate"] { --tone: var(--escalate); --tint: var(--escalate-tint); box-shadow: inset 0 0 0 2px var(--escalate); }
+    .panel.calling::after { animation: call 1.2s ease-out 3; }
+    @keyframes call { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(1.04); } }
 
     .status {
-      font-family: var(--font-display); font-size: clamp(1.15rem, 3.3dvh, 1.6rem); line-height: 1.15; font-weight: 700;
-      letter-spacing: -0.01em; color: var(--tone); text-wrap: balance;
+      font-family: var(--font-display); font-weight: 800; letter-spacing: -0.02em;
+      font-size: clamp(1.6rem, min(8.4vw, 4.6dvh), 2.4rem); line-height: 1.05; text-wrap: balance;
     }
-    .reading { display: flex; align-items: flex-end; gap: 12px; margin-top: clamp(4px, 1.3dvh, 12px); }
+    .status-sub { margin-top: 2px; font-size: 0.86rem; font-weight: 700; opacity: 0.8; }
+
+    /* What to do: quiet line when nothing is needed, a solid block when something is. */
+    .todo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.02rem; line-height: 1.25; }
+    .todo svg { width: 22px; height: 22px; color: var(--tone); }
+    .todo .todo-label { display: none; }
+    .panel[data-act="1"] .todo {
+      background: var(--surface); color: var(--ink); border-radius: var(--r-md);
+      padding: clamp(8px, 1.4dvh, 12px) 14px; font-size: 1.08rem; box-shadow: var(--shadow);
+    }
+    .panel[data-act="1"] .todo svg { color: var(--accent); width: 26px; height: 26px; }
+    .panel[data-level="escalate"][data-act="1"] .todo svg { color: var(--help); }
+    .panel[data-act="1"] .todo .todo-label { display: block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+    #next-step { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    /* Heart rate */
+    .reading { display: flex; align-items: flex-end; gap: clamp(10px, 3vw, 16px); }
     .hr {
-      font-size: clamp(2.75rem, min(25vw, 10.5dvh), 6.5rem); line-height: 0.82; font-weight: 700; letter-spacing: -0.045em;
-      font-family: var(--font-num); font-variant-numeric: tabular-nums lining-nums; color: var(--ink);
+      font-family: var(--font-display); font-weight: 700; letter-spacing: -0.045em;
+      font-variant-numeric: tabular-nums lining-nums;
+      font-size: clamp(3.4rem, min(25vw, 12.5dvh), 7.25rem); line-height: 0.8;
       transition: opacity 0.4s ease;
     }
-    .reading-side { display: flex; flex-direction: column; gap: 8px; padding-bottom: 2px; }
-    .beat { width: clamp(20px, 3.6dvh, 30px); height: clamp(20px, 3.6dvh, 30px); color: var(--tone); transform-origin: 50% 60%; }
-    .hero.is-live .beat { animation: beat var(--beat) ease-out infinite; }
-    .unit { font-size: 0.95rem; line-height: 1.15; font-weight: 600; color: var(--ink-2); }
-    @keyframes beat {
-      0% { transform: scale(1); } 14% { transform: scale(1.16); } 28% { transform: scale(1); }
-      40% { transform: scale(1.07); } 55%, 100% { transform: scale(1); }
-    }
-    .hero.is-paused .hr { opacity: 0.38; }
-    .hero.is-paused .beat { animation: none; opacity: 0.45; }
-    .meta-line { margin-top: clamp(4px, 1.2dvh, 12px); font-size: 0.88rem; color: var(--ink-2); }
-    #meta { font-weight: 700; color: var(--ink); }
+    .hr-side { display: grid; gap: 4px; padding-bottom: 2px; min-width: 0; }
+    .hr-unit { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 0.98rem; }
+    .beat { width: clamp(22px, 3.6dvh, 30px); height: clamp(22px, 3.6dvh, 30px); color: var(--tone); transform-origin: 50% 60%; }
+    .panel[data-level="escalate"] .beat { color: #ffd5d1; }
+    .panel.is-live .beat { animation: beat var(--beat) ease-out infinite; }
+    @keyframes beat { 0% { transform: scale(1); } 14% { transform: scale(1.18); } 28% { transform: scale(1); } 40% { transform: scale(1.07); } 55%, 100% { transform: scale(1); } }
+    .meta { font-size: 0.88rem; font-weight: 600; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .panel.is-paused .hr { opacity: 0.35; }
+    .panel.is-paused .beat { animation: none; opacity: 0.4; }
 
-    .update {
-      margin-top: clamp(8px, 1.6dvh, 14px); padding-top: clamp(8px, 1.6dvh, 14px);
-      border-top: 1px solid color-mix(in srgb, var(--tone) 25%, transparent);
+    /* Rail: where "now" sits against "your usual" (or the walk zone). */
+    .rail { display: grid; gap: 6px; }
+    .rail-track { position: relative; height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--pink) 13%, transparent); }
+    .rail-band { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: color-mix(in srgb, var(--normal-tone) 55%, transparent); }
+    .panel[data-level="escalate"] .rail-band { background: rgba(255,255,255,0.45); }
+    .rail-fill { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: var(--tone); opacity: 0.85; transition: left .5s ease, width .5s ease; }
+    .rail-usual { position: absolute; top: -5px; bottom: -5px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: var(--pink); opacity: 0.55; }
+    .rail-mark {
+      position: absolute; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; border-radius: 50%;
+      background: var(--field); border: 5px solid var(--pink); transition: left .5s ease;
     }
-    .update.arrived { animation: arrive 0.4s ease-out; }
-    @keyframes arrive { from { opacity: 0.4; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-    .eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
-    #headline, #reason { display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; }
-    #headline { margin-top: 2px; font-family: var(--font-display); font-size: clamp(1.05rem, 2.7dvh, 1.25rem); line-height: 1.25; font-weight: 600; -webkit-line-clamp: 2; }
-    #reason { margin-top: 2px; font-size: 0.95rem; line-height: 1.4; color: var(--ink-2); -webkit-line-clamp: 3; }
-    .next {
-      display: flex; align-items: center; gap: 12px;
-      margin-top: clamp(6px, 1.4dvh, 12px); padding: clamp(6px, 1.2dvh, 10px) 12px; border-radius: 14px; background: var(--surface);
+    .rail-labels { display: flex; justify-content: space-between; gap: 10px; font-size: 0.86rem; font-weight: 600; }
+    .rail-labels b { font-weight: 800; }
+
+    /* =========================================================
+       Feed: latest update (or the walk coach) + earlier alerts
+       ========================================================= */
+    .feed { grid-area: feed; min-height: 0; display: flex; flex-direction: column; gap: var(--gap); }
+    .feed > * { flex-shrink: 0; }
+    .card {
+      position: relative; background: var(--surface); border-radius: var(--r-lg); box-shadow: var(--shadow);
+      padding: clamp(12px, 1.9dvh, 18px) 16px;
     }
-    .next svg { width: 22px; height: 22px; color: var(--accent); }
-    .next .eyebrow { color: var(--accent); }
-    #next-step { display: block; font-size: 1.02rem; font-weight: 700; line-height: 1.25; }
-
-    .card-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: clamp(8px, 1.4dvh, 12px); }
-    .chip.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-    .chip.on svg { color: var(--accent-ink); }
-
-    /* Guided walk panel: takes the place of the latest update while a walk is on */
-    body.walk-on .update { display: none; }
-    .walk {
-      margin-top: clamp(8px, 1.6dvh, 14px); padding-top: clamp(8px, 1.6dvh, 14px);
-      border-top: 1px solid color-mix(in srgb, var(--tone) 25%, transparent); display: grid; gap: 8px;
+    .eyebrow { font-size: 0.74rem; font-weight: 800; letter-spacing: 0.09em; text-transform: uppercase; color: var(--ink-3); }
+    .u-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .u-time { font-size: 0.84rem; color: var(--ink-3); font-weight: 600; }
+    .lvl-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--neutral-tone); margin-right: 7px; vertical-align: 0; }
+    [data-level="normal"] > .lvl-dot, .lvl-dot[data-level="normal"] { background: var(--normal-tone); }
+    [data-level="monitor"] > .lvl-dot, .lvl-dot[data-level="monitor"] { background: var(--monitor-tone); }
+    [data-level="notify"] > .lvl-dot, .lvl-dot[data-level="notify"] { background: var(--notify-tone); }
+    [data-level="escalate"] > .lvl-dot, .lvl-dot[data-level="escalate"] { background: var(--help); }
+    #headline {
+      margin-top: 4px; font-family: var(--font-display); font-weight: 700; font-size: clamp(1.12rem, 2.6dvh, 1.3rem); line-height: 1.2;
+      letter-spacing: -0.01em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-    .walk-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
-    #walk-title { font-family: var(--font-display); font-size: clamp(1.05rem, 2.7dvh, 1.25rem); font-weight: 600; }
-    #walk-clock { font-family: var(--font-num); font-variant-numeric: tabular-nums; color: var(--ink-2); font-size: 0.95rem; }
-    .zone { position: relative; height: 14px; border-radius: 7px; background: var(--surface); }
-    .zone .band { position: absolute; top: 0; bottom: 0; border-radius: 7px; background: color-mix(in srgb, var(--normal) 45%, transparent); }
-    .zone .mark { position: absolute; top: -4px; width: 4px; height: 22px; margin-left: -2px; border-radius: 2px; background: var(--ink); transition: left 0.4s ease; }
-    .zone-labels { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--ink-3); font-family: var(--font-num); }
-    #walk-status { font-weight: 700; }
-    #walk-status.in { color: var(--normal); } #walk-status.above { color: var(--notify); } #walk-status.below { color: var(--ink-2); }
-    #walk-tip { font-size: 0.95rem; color: var(--ink-2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    #walk-done { justify-self: start; }
-    .chip {
-      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-      min-height: clamp(40px, 5.4dvh, 46px); padding: 6px 12px; border-radius: 14px;
-      background: color-mix(in srgb, var(--surface) 70%, transparent); border: 1.5px solid var(--rule-strong);
-      font-size: clamp(0.85rem, 3.7vw, 0.95rem); font-weight: 700; color: var(--ink); cursor: pointer; white-space: nowrap;
+    #reason {
+      margin-top: 4px; color: var(--ink-2); font-size: 0.98rem; line-height: 1.42;
+      display: -webkit-box; -webkit-line-clamp: var(--clamp, 4); -webkit-box-orient: vertical; overflow: hidden;
     }
-    .chip svg { width: 18px; height: 18px; color: var(--accent); }
-    .chip:active { transform: scale(0.98); }
-
-    /* ---------- Recent alerts ---------- */
-    .recent {
-      flex: 1 1 auto; min-height: 0; overflow: hidden;
-      padding: 6px 14px 4px; border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow);
+    .more {
+      margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; min-height: 40px;
+      padding: 0; border: 0; background: none; color: var(--accent); font-weight: 800; font-size: 0.98rem;
     }
-    .recent-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-    .recent-head h2 { font-size: 1rem; font-weight: 700; margin-right: auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .recent-head .link-btn { white-space: nowrap; }
-    .recent-head { gap: 6px; }
-    .recent-head .pill { min-height: 34px; padding: 4px 10px; font-size: 0.82rem; }
-    .link-btn {
-      border: 0; background: none; padding: 8px 2px; min-height: 40px; cursor: pointer;
-      color: var(--accent); font-size: 0.92rem; font-weight: 700;
+    .more::after { content: ""; position: absolute; inset: 0; border-radius: inherit; } /* whole card opens Why */
+    .more svg { width: 18px; height: 18px; }
+    .update.arrived { animation: arrive 0.45s ease-out; }
+    @keyframes arrive { from { opacity: 0.3; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+    .earlier { padding-inline: 6px; min-height: 0; }
+    .earlier ul { margin-top: 2px; }
+    .earlier li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid var(--line); font-size: 0.96rem; }
+    .earlier li:first-child { border-top: 0; }
+    .earlier .e-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .earlier .e-time { color: var(--ink-3); font-size: 0.86rem; }
+    .earlier .lvl-dot { margin: 0; }
+    .lvl-icon { width: 18px; height: 18px; flex: none; color: var(--neutral-tone); }
+    .lvl-icon[data-level="normal"] { color: var(--normal-tone); }
+    .lvl-icon[data-level="monitor"] { color: var(--monitor-tone); }
+    .lvl-icon[data-level="notify"] { color: var(--notify-tone); }
+    .lvl-icon[data-level="escalate"] { color: var(--help); }
+
+    /* Trend: only shown when the screen has room for it; then it fills that room. */
+    .trend { flex: 1 1 0; min-height: 112px; display: flex; flex-direction: column; gap: 6px; }
+    .trend-plot { position: relative; flex: 1 1 auto; min-height: 0; touch-action: pan-y; }
+    .trend-plot svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+    .trend-line { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+    .trend-area { fill: color-mix(in srgb, var(--accent) 10%, transparent); }
+    .trend-usual { stroke: var(--ink-3); stroke-width: 1.5; stroke-dasharray: 4 4; }
+    .trend-usual-label { fill: var(--ink-3); font-size: 12px; font-weight: 700; font-family: var(--font); }
+    .trend-now { fill: var(--accent); stroke: var(--surface); stroke-width: 2; }
+    .trend-cross { stroke: var(--ink-3); stroke-width: 1; }
+    .trend-key { display: inline-flex; align-items: center; gap: 6px; }
+    .trend-key i { width: 18px; border-top: 2px dashed var(--ink-3); }
+    .trend-x { display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--ink-3); font-weight: 600; }
+    .trend-tip {
+      position: absolute; top: -4px; transform: translate(-50%, -100%); padding: 4px 9px; border-radius: 8px;
+      background: var(--ink); color: var(--bg); font-size: 0.85rem; font-weight: 700; white-space: nowrap; pointer-events: none;
     }
-    ul.history { list-style: none; margin: 4px 0 0; padding: 0; }
-    ul.history li { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 10px; padding: 8px 0; border-top: 1px solid var(--rule); }
-    ul.history li:first-child { border-top: 0; }
-    ul.history li.empty { display: block; color: var(--ink-3); font-size: 0.95rem; }
-    .h-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--neutral); align-self: center; }
-    .h-dot[data-level="normal"] { background: var(--normal); } .h-dot[data-level="monitor"] { background: var(--monitor); }
-    .h-dot[data-level="notify"] { background: var(--notify); } .h-dot[data-level="escalate"] { background: var(--escalate); }
-    .h-text { font-size: 0.97rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .h-time { color: var(--ink-3); font-size: 0.85rem; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
 
-    /* ---------- Bottom ---------- */
-    .fineprint { flex: none; margin-top: 6px; text-align: center; font-size: 0.78rem; color: var(--ink-3); }
-    @media (max-height: 760px) { .fineprint { display: none; } }
+    /* Walk coach card */
+    .walkcard { display: grid; gap: 10px; }
+    .w-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+    .w-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.12rem, 2.6dvh, 1.3rem); }
+    .w-clock { font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+    .w-tip { display: flex; gap: 10px; align-items: flex-start; font-size: 1rem; color: var(--ink); }
+    .w-tip svg { width: 22px; height: 22px; color: var(--accent); margin-top: 1px; }
+    .w-tip span { display: -webkit-box; -webkit-line-clamp: var(--clamp, 3); -webkit-box-orient: vertical; overflow: hidden; }
+    .w-zone { font-size: 0.88rem; color: var(--ink-3); }
+    .w-recover { display: flex; align-items: center; gap: 14px; }
+    .w-ring { position: relative; width: 74px; height: 74px; flex: none; }
+    .w-ring svg { width: 74px; height: 74px; transform: rotate(-90deg); }
+    .w-ring .trk { fill: none; stroke: var(--line); stroke-width: 7; }
+    .w-ring .bar { fill: none; stroke: var(--accent); stroke-width: 7; stroke-linecap: round; transition: stroke-dashoffset .4s linear; }
+    .w-ring b { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; }
+    .w-drop { display: flex; align-items: baseline; gap: 8px; }
+    .w-drop b { font-family: var(--font-display); font-size: 2.2rem; line-height: 1; font-weight: 800; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      min-height: 48px; padding: 8px 18px; border-radius: var(--r-md); border: 1.5px solid var(--line-strong);
+      background: var(--surface); color: var(--ink); font-weight: 800; font-size: 1rem;
+    }
+    .btn.solid { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+    .btn:active, .dock-btn:active, .big:active { transform: scale(0.98); }
 
-    /* Squeeze steps, added by fit() only when the card leaves no room for the alerts header. */
-    body.squeeze-1 #reason { -webkit-line-clamp: 1; }
-    body.squeeze-2 #reason { display: none; }
-    body.squeeze-3 .meta-line { display: none; }
-    body.squeeze-4 .next .eyebrow, body.squeeze-4 .unit { display: none; }
-    body.squeeze-4 #headline { -webkit-line-clamp: 1; }
+    /* =========================================================
+       Dock: three big labelled actions in the thumb zone
+       ========================================================= */
+    .dock { grid-area: dock; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .dock-btn {
+      position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+      min-height: clamp(56px, 8.4dvh, 68px); padding: 6px 4px; border-radius: var(--r-lg);
+      background: var(--surface); border: 1.5px solid var(--line); box-shadow: var(--shadow);
+      font-weight: 800; font-size: 0.95rem; color: var(--ink);
+    }
+    .dock-btn svg { width: 24px; height: 24px; color: var(--accent); }
+    .dock-btn.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+    .dock-btn.on svg { color: var(--accent-ink); }
+    .dock-btn:disabled { opacity: 0.6; cursor: default; }
+    .badge {
+      position: absolute; top: 6px; right: calc(50% - 32px); min-width: 22px; height: 22px; padding: 0 6px;
+      border-radius: 11px; background: var(--ink); color: var(--bg); font-size: 0.78rem; font-weight: 800;
+      display: grid; place-items: center; font-family: var(--font-display);
+    }
 
-    /* Landscape phones: two columns inside the card. */
+    /* ---------- Compact: short screens (set by fit() when the content needs it) ---------- */
+    body.compact .panel { gap: 7px; padding-block: 12px; }
+    body.compact .status { font-size: clamp(1.4rem, 7.6vw, 1.8rem); }
+    body.compact .rail-labels { font-size: 0.8rem; }
+    body.compact .dock-btn { min-height: 52px; gap: 1px; }
+    body.compact .dock-btn svg { width: 20px; height: 20px; }
+    body.compact .badge { top: 3px; }
+    body.compact .card { padding-block: 10px; }
+    body.compact .more { min-height: 34px; margin-top: 4px; }
+    body.compact2 .panel[data-act="1"] .todo .todo-label { display: none; }
+    body.compact2 .hr { font-size: clamp(3rem, 10dvh, 4rem); }
+    body.compact2 .app { --gap: 7px; }
+    body.compact2 .panel { gap: 6px; padding-block: 10px; }
+    body.compact2 .rail { gap: 3px; }
+
+    /* ---------- Landscape phones: answer on the left, update + actions on the right ---------- */
     @media (orientation: landscape) and (max-height: 540px) {
-      .shell { max-width: 900px; }
-      .hero {
-        display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); column-gap: 18px;
-        grid-template-areas: "status update" "reading update" "meta update" "actions update"; align-content: start;
+      .app {
+        max-width: 980px;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+        grid-template-rows: auto auto minmax(0, 1fr) auto;
+        grid-template-areas: "top top" "panel banner" "panel feed" "panel dock";
+        column-gap: 14px;
       }
-      .status { grid-area: status; } .reading { grid-area: reading; } .meta-line { grid-area: meta; }
-      .card-actions { grid-area: actions; }
-      .walk { grid-area: update; margin-top: 0; padding-top: 0; padding-left: 18px; border-top: 0;
-        border-left: 1px solid color-mix(in srgb, var(--tone) 25%, transparent); align-content: start; }
-      .update { grid-area: update; margin-top: 0; padding-top: 0; padding-left: 18px; border-top: 0;
-        border-left: 1px solid color-mix(in srgb, var(--tone) 25%, transparent); }
-      .hr { font-size: clamp(2.5rem, 17dvh, 5rem); }
+      .app.no-banner { grid-template-areas: "top top" "panel feed" "panel feed" "panel dock"; }
+      .panel { align-content: center; }
+      .hr { font-size: clamp(3rem, min(12vw, 19dvh), 6rem); }
+      .status { font-size: clamp(1.4rem, 6.4dvh, 2rem); }
+      .dock-btn { min-height: 52px; flex-direction: row; gap: 6px; }
+      .badge { position: static; }
+    }
+    /* Tablet / desktop: a calm centred column, a bit roomier. */
+    @media (min-width: 700px) and (min-height: 700px) {
+      .app { max-width: 560px; padding-top: 24px; padding-bottom: 24px; }
     }
 
-    /* ---------- Sheets (popups) ---------- */
+    /* =========================================================
+       Sheets
+       ========================================================= */
     dialog.sheet {
-      border: 0; padding: 0; width: 100%; max-width: 480px; max-height: 86vh;
-      margin: auto auto 0; border-radius: 24px 24px 0 0;
-      background: var(--surface); color: var(--ink); box-shadow: var(--shadow);
+      border: 0; padding: 0; width: 100%; max-width: 540px; max-height: 88dvh;
+      margin: auto auto 0; border-radius: 26px 26px 0 0;
+      background: var(--surface); color: var(--ink); box-shadow: var(--shadow); overflow: hidden;
     }
-    @media (min-width: 560px) { dialog.sheet { margin: auto; border-radius: 24px; } }
     dialog.sheet::backdrop { background: var(--scrim); }
-    dialog.sheet[open] { animation: sheet-in 0.25s ease-out; }
-    @keyframes sheet-in { from { transform: translateY(24px); opacity: 0.6; } to { transform: none; opacity: 1; } }
-    .sheet-inner { display: flex; flex-direction: column; max-height: 86vh; }
-    .sheet-head {
-      display: flex; align-items: center; justify-content: space-between; gap: 12px;
-      padding: 16px 18px 12px; border-bottom: 1px solid var(--rule);
+    dialog.sheet[open] { animation: up 0.26s ease-out; }
+    @keyframes up { from { transform: translateY(30px); opacity: 0.5; } to { transform: none; opacity: 1; } }
+    @media (min-width: 700px), (orientation: landscape) and (max-height: 540px) {
+      dialog.sheet { margin: auto; border-radius: 26px; max-height: 90dvh; }
     }
-    .sheet-head h2 { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; }
-    .sheet-head p { font-size: 0.88rem; color: var(--ink-3); }
-    .close {
-      width: 44px; height: 44px; border-radius: 50%; border: 1.5px solid var(--rule-strong);
-      background: transparent; cursor: pointer; display: grid; place-items: center;
-    }
+    .sheet-inner { display: flex; flex-direction: column; max-height: inherit; }
+    .sheet-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 18px 12px; border-bottom: 1px solid var(--line); }
+    .sheet-head h2 { font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; line-height: 1.15; letter-spacing: -0.01em; }
+    .sheet-head p { margin-top: 3px; font-size: 0.9rem; color: var(--ink-3); }
+    .close { width: 46px; height: 46px; flex: none; border-radius: 50%; border: 1.5px solid var(--line-strong); background: var(--surface); display: grid; place-items: center; }
     .close svg { width: 18px; height: 18px; }
-    .sheet-body { padding: 14px 18px calc(20px + env(safe-area-inset-bottom)); overflow-y: auto; }
-    .summary { padding: 12px 14px; border-radius: 14px; background: var(--accent-soft); font-size: 1rem; }
-    dl.rows { margin: 10px 0 0; }
-    .row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 11px 0; border-top: 1px solid var(--rule); }
-    .row:first-child { border-top: 0; }
+    .sheet-body { padding: 16px 18px calc(22px + env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; }
+    .sec { margin-top: 20px; }
+    .sec:first-child { margin-top: 0; }
+    .sec > .eyebrow { margin-bottom: 8px; }
+    .quote { font-size: 1.02rem; line-height: 1.5; }
+    .plainbox { padding: 13px 15px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line); font-size: 1rem; }
+    .compare { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .compare div { padding: 10px; border-radius: var(--r-md); background: var(--surface-2); border: 1px solid var(--line); }
+    .compare b { display: block; font-family: var(--font-display); font-size: 1.6rem; line-height: 1.1; }
+    .compare span { font-size: 0.8rem; color: var(--ink-3); font-weight: 700; }
+    dl.rows .row { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 11px 0; border-top: 1px solid var(--line); }
+    dl.rows .row:first-child { border-top: 0; }
     dt { color: var(--ink-2); }
-    dd { margin: 0; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
-    .tag { display: inline-block; margin-left: 6px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-3); vertical-align: 2px; }
-    .tag.warn { color: var(--monitor); }
-    .sec-title { margin-top: 16px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
-    .sec-title:first-child { margin-top: 0; }
-    ul.plain { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 6px; }
-    ul.plain li { font-size: 0.98rem; }
-    ul.effects { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
-    ul.effects li { padding-left: 12px; border-left: 3px solid var(--accent); font-size: 0.95rem; }
-    ul.all-alerts { list-style: none; margin: 0; padding: 0; }
-    ul.all-alerts li { padding: 12px 0; border-top: 1px solid var(--rule); display: grid; gap: 3px; }
-    ul.all-alerts li:first-child { border-top: 0; padding-top: 0; }
-    .a-top { display: flex; justify-content: space-between; gap: 12px; font-size: 0.88rem; }
-    .a-level { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; }
-    .a-level::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-    .a-level[data-level="normal"] { color: var(--normal); } .a-level[data-level="monitor"] { color: var(--monitor); }
-    .a-level[data-level="notify"] { color: var(--notify); } .a-level[data-level="escalate"] { color: var(--escalate); }
-    .a-head { font-weight: 700; }
-    .a-reason { font-size: 0.93rem; color: var(--ink-2); }
+    dd { text-align: right; font-weight: 800; }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; background: var(--normal-field); color: var(--normal-ink); vertical-align: 3px; }
+    .tag.warn { background: var(--warn-bg); color: var(--warn-ink); }
+    .effects li { padding: 10px 12px; border-radius: var(--r-md); background: var(--surface-2); border-left: 4px solid var(--accent); font-size: 0.97rem; }
+    .effects li + li { margin-top: 8px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chips li { padding: 6px 11px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); font-size: 0.95rem; }
+    .chips li.key { border-color: var(--accent); font-weight: 700; }
+    .meds li { display: flex; justify-content: space-between; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line); }
+    .meds li:first-child { border-top: 0; }
+    .meds b { font-weight: 700; }
+    .meds span { color: var(--ink-3); font-size: 0.9rem; text-align: right; }
+    .all li { padding: 14px 0; border-top: 1px solid var(--line); display: grid; gap: 3px; }
+    .all li:first-child { border-top: 0; padding-top: 0; }
+    .a-top { display: flex; justify-content: space-between; gap: 12px; font-size: 0.9rem; }
+    .a-lvl { font-weight: 800; display: inline-flex; align-items: center; }
+    .a-head { font-weight: 800; }
+    .a-reason { font-size: 0.95rem; color: var(--ink-2); }
+    .empty { color: var(--ink-3); }
+    .testrow { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 14px; border-top: 1px dashed var(--line-strong); font-size: 0.9rem; color: var(--ink-3); }
 
-    /* "Are you OK?" check-in */
-    .checkin-body { display: grid; justify-items: center; gap: 12px; text-align: center; padding: 22px 20px calc(22px + env(safe-area-inset-bottom)); }
-    .ring { position: relative; width: 116px; height: 116px; }
-    .ring svg { width: 116px; height: 116px; transform: rotate(-90deg); }
-    .ring .track { fill: none; stroke: var(--rule); stroke-width: 9; }
-    .ring .bar { fill: none; stroke: var(--notify); stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 0.25s linear; }
-    .ring .count { position: absolute; inset: 0; display: grid; place-content: center; font-family: var(--font-num); font-variant-numeric: tabular-nums; }
-    .ring .count b { font-size: 2.4rem; line-height: 1; }
-    .ring .count small { font-size: 0.75rem; color: var(--ink-3); }
-    #checkin-title { font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; }
-    #checkin-text { color: var(--ink-2); max-width: 30ch; }
-    .big {
-      width: 100%; min-height: 60px; border-radius: 18px; border: 2px solid transparent; cursor: pointer;
-      font-size: 1.2rem; font-weight: 800;
+    /* =========================================================
+       "Are you OK?" - a full-screen takeover, not a sheet
+       ========================================================= */
+    dialog.takeover {
+      border: 0; padding: 0; margin: 0; width: 100%; height: 100%; max-width: none; max-height: none;
+      background: var(--bg); color: var(--ink);
     }
-    .big.ok { background: var(--normal); color: var(--surface); }
-    .big.help { background: transparent; border-color: var(--escalate); color: var(--escalate); }
-    .big:active { transform: scale(0.98); }
+    dialog.takeover::backdrop { background: var(--bg); }
+    .ck {
+      height: 100%; max-width: 520px; margin: 0 auto; overflow-y: auto;
+      display: grid; grid-template-rows: 1fr auto; gap: 16px;
+      padding: max(20px, env(safe-area-inset-top)) 20px max(20px, env(safe-area-inset-bottom));
+    }
+    .ck-main { display: grid; align-content: center; justify-items: center; text-align: center; gap: clamp(10px, 2dvh, 18px); }
+    .ck-ring { position: relative; width: clamp(96px, 20dvh, 150px); aspect-ratio: 1; }
+    .ck-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .ck-ring .trk { fill: none; stroke: var(--line); stroke-width: 8; }
+    .ck-ring .bar { fill: none; stroke: var(--notify-tone); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .25s linear; }
+    .ck-ring div { position: absolute; inset: 0; display: grid; place-content: center; }
+    .ck-ring b { font-family: var(--font-display); font-size: clamp(2rem, 6dvh, 3rem); line-height: 1; font-weight: 800; }
+    .ck-ring small { font-size: 0.78rem; color: var(--ink-3); font-weight: 700; }
+    .ck-icon { width: clamp(72px, 14dvh, 100px); height: clamp(72px, 14dvh, 100px); border-radius: 50%; display: grid; place-items: center; }
+    .ck-icon svg { width: 50%; height: 50%; }
+    .ck-icon.help { background: var(--bad-bg); color: var(--help); }
+    .ck-icon.sent { background: var(--warn-bg); color: var(--warn-ink); }
+    #ck-title { font-family: var(--font-display); font-weight: 800; font-size: clamp(2rem, 6.4dvh, 3rem); line-height: 1.05; letter-spacing: -0.02em; }
+    #ck-text { font-size: 1.08rem; color: var(--ink-2); max-width: 32ch; }
+    .ck-actions { display: grid; gap: 12px; }
+    .big {
+      width: 100%; min-height: clamp(60px, 9dvh, 76px); border-radius: 20px; border: 0;
+      font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 10px;
+    }
+    .big svg { width: 26px; height: 26px; }
+    .big.ok { background: var(--ok); color: #fff; }
+    .big.help { background: var(--help); color: #fff; }
+    .big.plain { background: var(--surface); color: var(--ink); border: 1.5px solid var(--line-strong); }
+    @media (orientation: landscape) and (max-height: 540px) {
+      .ck { max-width: 900px; grid-template-rows: 1fr; grid-template-columns: 1.1fr 1fr; align-items: center; column-gap: 28px; }
+      .ck-main { grid-template-columns: auto 1fr; text-align: left; justify-items: start; column-gap: 20px; }
+      .ck-ring, .ck-icon { grid-row: span 2; }
+    }
+
+    /* Demo control sheet */
+    .demo-group + .demo-group { margin-top: 16px; }
+    .demo-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .demo-grid button {
+      min-height: 40px; padding: 6px 12px; border-radius: 10px; border: 1.5px solid var(--line-strong);
+      background: var(--surface-2); font-size: 0.9rem; font-weight: 700;
+    }
+    .demo-note { margin-top: 14px; font-size: 0.85rem; color: var(--ink-3); }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -370,95 +494,104 @@
   </style>
 </head>
 <body>
-  <div class="shell">
+  <div class="app no-banner" id="app">
+    <!-- Top bar: connection, demo controls, sound -->
     <header class="top">
-      <div class="brand">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l2-4 3 8 2-4h7"/></svg>
-        <span>CardioGlasses</span>
-      </div>
-      <div class="top-right">
-        <span class="conn" id="link" role="status">Connecting…</span>
-        <button type="button" id="sound" class="pill primary" aria-pressed="false">
-          <svg class="ico-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5"/><path d="M18.5 7a7 7 0 0 1 0 10"/></svg>
-          <svg class="ico-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 12.2l2 2 4-4.5"/></svg>
-          <span id="sound-label">Sound off</span>
-        </button>
-      </div>
+      <span class="conn" id="link" role="status"><i></i><span id="link-text">Connecting…</span></span>
+      <button type="button" class="demo-btn" id="open-demo" aria-haspopup="dialog">Demo</button>
+      <button type="button" class="sound" id="sound" data-mode="off" aria-pressed="false">
+        <svg class="s-ico s-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+        <svg class="s-ico s-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5a3.5 3.5 0 0 1 0 5"/><path d="M18.5 7a7 7 0 0 1 0 10"/></svg>
+        <svg class="s-ico s-missed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg>
+        <span id="sound-label">Turn on sound</span>
+      </button>
     </header>
 
-    <div class="banner bad" id="offline-banner" role="alert" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.8"/><path d="M19 12.9a10 10 0 0 0-2.3-1.7"/><path d="M12 20h.01"/></svg>
-      <span id="offline-text">Sensor offline: no data received</span>
-    </div>
-    <div class="banner" id="quality-banner" role="status" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5"/><path d="M12 16.2h.01"/></svg>
-      <span>Weak signal. No alerts until it improves. Try adjusting your glasses.</span>
-    </div>
-    <div class="banner" id="patient-banner" role="status" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.8h.01"/></svg>
-      <span id="patient-banner-text"></span>
+    <!-- One banner slot: offline > weak signal > record source -->
+    <div class="banner" id="banner" hidden>
+      <svg id="banner-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"></svg>
+      <span id="banner-text"></span>
     </div>
 
-    <main>
-      <section class="hero" id="hero" data-level="" aria-label="Your heart right now">
-        <p class="status" id="badge">Getting ready</p>
-        <div class="reading">
-          <span class="hr" id="hr" aria-label="heart rate">—</span>
-          <div class="reading-side">
+    <!-- The answer: how am I, what do I do, what's my heart doing -->
+    <section class="panel" id="panel" data-level="" aria-label="Your heart right now">
+      <div>
+        <h1 class="status" id="badge" aria-live="polite">Getting ready</h1>
+      </div>
+      <div class="todo" id="todo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
+        <div><span class="todo-label">What to do</span><span id="next-step">Nothing you need to do</span></div>
+      </div>
+      <div class="reading">
+        <span class="hr" id="hr" aria-label="heart rate">—</span>
+        <div class="hr-side">
+          <span class="hr-unit">
             <svg class="beat" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 20.6c-.3 0-.6-.1-.8-.3C6.4 16.2 3 13.1 3 9.2 3 6.6 5 4.6 7.5 4.6c1.8 0 3.4 1 4.5 2.5 1.1-1.5 2.7-2.5 4.5-2.5C19 4.6 21 6.6 21 9.2c0 3.9-3.4 7-8.2 11.1-.2.2-.5.3-.8.3z"/></svg>
-            <span class="unit">beats<br />per minute</span>
-          </div>
+            beats / min
+          </span>
+          <span class="meta"><span id="meta">No reading yet</span></span>
         </div>
-        <p class="meta-line"><span id="meta">No reading yet</span> · <span id="updated">Waiting for sensor data</span></p>
+      </div>
+      <div class="rail" id="rail" aria-hidden="true">
+        <div class="rail-track"><span class="rail-band" id="rail-band" hidden></span><span class="rail-fill" id="rail-fill"></span><span class="rail-usual" id="rail-usual"></span><span class="rail-mark" id="rail-mark"></span></div>
+        <div class="rail-labels"><span id="rail-left">Your usual: —</span><span id="rail-right"></span></div>
+      </div>
+      <p class="sr" id="updated-sr"></p>
+    </section>
 
-        <div class="update" id="alert-card" data-level="" aria-live="polite">
-          <p class="eyebrow">Latest update</p>
-          <h2 id="headline">Nothing to report</h2>
-          <p id="reason">If anything changes, you'll see what happened here.</p>
-          <div class="next">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>
-            <div>
-              <span class="eyebrow">What to do</span>
-              <span id="next-step">Nothing right now</span>
-            </div>
-          </div>
+    <!-- Feed: the latest update (or walk coach), then earlier alerts if there's room -->
+    <section class="feed" id="feed">
+      <article class="card update" id="update" data-level="" aria-live="polite">
+        <div class="u-top"><span class="eyebrow" id="u-eyebrow">Latest update</span><span class="u-time" id="u-time"></span></div>
+        <h2 id="headline">Nothing to report</h2>
+        <p id="reason">If anything changes, you'll see what happened here, in plain words.</p>
+        <button type="button" class="more" id="open-why">Why? What we measured
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+      </article>
+
+      <article class="card walkcard" id="walkcard" hidden aria-live="polite">
+        <div class="w-top"><h2 class="w-title" id="walk-title">Guided walk</h2><span class="w-clock" id="walk-clock">0:00</span></div>
+        <div class="w-recover" id="walk-recover" hidden>
+          <div class="w-ring"><svg viewBox="0 0 74 74" aria-hidden="true"><circle class="trk" cx="37" cy="37" r="31"/><circle class="bar" id="walk-ring" cx="37" cy="37" r="31" stroke-dasharray="194.8" stroke-dashoffset="0"/></svg><b id="walk-left">60</b></div>
+          <p id="walk-recover-text">Stand or sit still. We're checking how fast your heart settles.</p>
         </div>
+        <div class="w-drop" id="walk-drop" hidden><b id="walk-drop-n">24</b><span id="walk-drop-text">bpm drop in the first minute</span></div>
+        <p class="w-tip" id="walk-tip-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 15V9a2 2 0 0 1 2-2h3l5-4v18l-5-4H6a2 2 0 0 1-2-2z"/><path d="M18 9a4 4 0 0 1 0 6"/></svg><span id="walk-tip">I'll only speak up if you go above your zone.</span></p>
+        <p class="w-zone" id="walk-zone-note"></p>
+        <button type="button" class="btn solid" id="walk-done" hidden>Done</button>
+      </article>
 
-        <div class="walk" id="walk-panel" hidden aria-live="polite">
-          <div class="walk-top"><h2 id="walk-title">Walking</h2><span id="walk-clock">0:00</span></div>
-          <div class="zone" id="zone" aria-hidden="true"><span class="band" id="zone-band"></span><span class="mark" id="zone-mark" hidden></span></div>
-          <div class="zone-labels"><span id="zone-text">Your zone</span><span id="walk-status"></span></div>
-          <p id="walk-tip"></p>
-          <button type="button" class="pill quiet" id="walk-done" hidden>Done</button>
+      <div class="earlier" id="earlier" hidden>
+        <p class="eyebrow">Earlier</p>
+        <ul id="earlier-list"></ul>
+      </div>
+
+      <article class="card trend" id="trend" hidden aria-label="Heart rate, last 10 minutes">
+        <div class="u-top"><span class="eyebrow">Last 10 minutes</span><span class="u-time" id="trend-range"></span></div>
+        <div class="trend-plot" id="trend-plot">
+          <svg id="trend-svg" aria-hidden="true"></svg>
+          <div class="trend-tip" id="trend-tip" hidden></div>
         </div>
+        <div class="trend-x"><span>10 min ago</span><span class="trend-key" id="trend-usual-key"><i></i>your usual <span id="trend-usual-n"></span></span><span>now</span></div>
+      </article>
+    </section>
 
-        <div class="card-actions">
-          <button type="button" class="chip" id="open-why">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.2 2.4c-.5.2-.7.6-.7 1.1v.5"/><path d="M12 16.8h.01"/></svg>
-            Why?
-          </button>
-          <button type="button" class="chip" id="open-record">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
-            Record
-          </button>
-          <button type="button" class="chip" id="walk-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4.5" r="1.8"/><path d="M10 21l2-6 3 3v3"/><path d="M8 11l3-3 3 2 2 3"/><path d="M12 15l-1-4"/></svg>
-            <span id="walk-label">Walk</span>
-          </button>
-        </div>
-      </section>
-
-      <section class="recent" aria-label="Recent alerts">
-        <div class="recent-head">
-          <h2>Recent alerts</h2>
-          <button type="button" id="simulate" class="pill quiet"><span id="simulate-label">Test</span></button>
-          <button type="button" class="link-btn" id="open-history"><span id="history-hint">See all</span></button>
-        </div>
-        <ul class="history" id="history"><li class="empty">No alerts yet</li></ul>
-      </section>
-
-      <p class="fineprint">Compares your heart rate with your own usual range. Not a diagnosis.</p>
-    </main>
+    <!-- Dock -->
+    <nav class="dock" aria-label="More">
+      <button type="button" class="dock-btn" id="walk-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4.5" r="1.8"/><path d="M10 21l2-6 3 3v3"/><path d="M8 11l3-3 3 2 2 3"/><path d="M12 15l-1-4"/></svg>
+        <span id="walk-label">Walk</span>
+      </button>
+      <button type="button" class="dock-btn" id="open-history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+        <span>Alerts</span><b class="badge" id="alert-count" hidden>0</b>
+      </button>
+      <button type="button" class="dock-btn" id="open-record">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+        <span>Record</span>
+      </button>
+    </nav>
   </div>
 
   <!-- Why? -->
@@ -469,20 +602,26 @@
         <button type="button" class="close" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
       <div class="sheet-body">
-        <p class="sec-title" id="why-what-title" hidden>What happened</p>
-        <p id="why-what" hidden></p>
-        <p class="sec-title">What we measured</p>
-        <p class="summary" id="why-summary">No reading yet.</p>
-        <dl class="rows" id="why">
-          <div class="row"><dt>Heart rate now</dt><dd id="why-hr">—</dd></div>
-          <div class="row"><dt>Your usual at rest</dt><dd id="why-usual">—</dd></div>
-          <div class="row"><dt>Difference</dt><dd id="why-dev">—</dd></div>
-          <div class="row"><dt>How long it has lasted</dt><dd id="why-persist">—</dd></div>
-          <div class="row"><dt>Moving or resting</dt><dd id="why-activity">—</dd></div>
-          <div class="row"><dt>Signal</dt><dd id="why-quality">—</dd></div>
-          <div class="row"><dt>Recovery after activity</dt><dd id="why-recovery">—</dd></div>
-          <div class="row"><dt>How sure we are</dt><dd id="why-confidence">—</dd></div>
-        </dl>
+        <div class="sec" id="why-what-sec" hidden><p class="eyebrow">What happened</p><p class="quote" id="why-what"></p></div>
+        <div class="sec">
+          <p class="eyebrow">What we measured</p>
+          <div class="compare"><div><span>Now</span><b id="why-hr-big">—</b></div><div><span>Your usual</span><b id="why-usual-big">—</b></div><div><span>Difference</span><b id="why-dev-big">—</b></div></div>
+          <p class="plainbox" id="why-summary">No reading yet.</p>
+        </div>
+        <div class="sec">
+          <p class="eyebrow">The details</p>
+          <dl class="rows">
+            <div class="row"><dt>Heart rate now</dt><dd id="why-hr">—</dd></div>
+            <div class="row"><dt>Your usual at rest</dt><dd id="why-usual">—</dd></div>
+            <div class="row"><dt>Difference</dt><dd id="why-dev">—</dd></div>
+            <div class="row"><dt>How long it has lasted</dt><dd id="why-persist">—</dd></div>
+            <div class="row"><dt>Moving or resting</dt><dd id="why-activity">—</dd></div>
+            <div class="row"><dt>Signal</dt><dd id="why-quality">—</dd></div>
+            <div class="row"><dt>Recovery after activity</dt><dd id="why-recovery">—</dd></div>
+            <div class="row"><dt>How sure we are</dt><dd id="why-confidence">—</dd></div>
+          </dl>
+        </div>
+        <p class="demo-note">Compares your heart rate with your own usual range. Not a diagnosis.</p>
       </div>
     </div>
   </dialog>
@@ -495,12 +634,9 @@
         <button type="button" class="close" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
       <div class="sheet-body">
-        <p class="sec-title" id="effects-title" hidden>How your record shapes monitoring</p>
-        <ul class="effects" id="record-effects"></ul>
-        <p class="sec-title">Conditions</p>
-        <ul class="plain" id="conditions"></ul>
-        <p class="sec-title">Medications</p>
-        <ul class="plain" id="medications"></ul>
+        <div class="sec" id="effects-sec" hidden><p class="eyebrow">How your record shapes monitoring</p><ul class="effects" id="record-effects"></ul></div>
+        <div class="sec"><p class="eyebrow">Conditions</p><ul class="chips" id="conditions"></ul></div>
+        <div class="sec"><p class="eyebrow">Medications</p><ul class="meds" id="medications"></ul></div>
       </div>
     </div>
   </dialog>
@@ -513,128 +649,261 @@
         <button type="button" class="close" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
       </div>
       <div class="sheet-body">
-        <ul class="all-alerts" id="all-alerts"></ul>
+        <ul class="all" id="all-alerts"></ul>
+        <div class="testrow">
+          <span>Check that alerts and sound work.</span>
+          <button type="button" class="btn" id="simulate"><span id="simulate-label">Send a test alert</span></button>
+        </div>
       </div>
     </div>
   </dialog>
 
   <!-- Are you OK? (opened by the backend's check-in; not dismissible while waiting) -->
-  <dialog class="sheet" id="checkin-sheet" aria-labelledby="checkin-title" data-locked>
-    <div class="sheet-inner">
-      <div class="checkin-body">
-        <div class="ring" id="checkin-ring">
-          <svg viewBox="0 0 116 116" aria-hidden="true"><circle class="track" cx="58" cy="58" r="50"/><circle class="bar" id="checkin-bar" cx="58" cy="58" r="50" stroke-dasharray="314.16" stroke-dashoffset="0"/></svg>
-          <div class="count"><b id="checkin-count">60</b><small>seconds</small></div>
+  <dialog class="takeover" id="checkin-sheet" aria-labelledby="ck-title">
+    <div class="ck">
+      <div class="ck-main">
+        <div class="ck-ring" id="ck-ring">
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle class="trk" cx="60" cy="60" r="52"/><circle class="bar" id="ck-bar" cx="60" cy="60" r="52" stroke-dasharray="326.73" stroke-dashoffset="0"/></svg>
+          <div><b id="ck-count">60</b><small>seconds</small></div>
         </div>
-        <h2 id="checkin-title">Are you OK?</h2>
-        <p id="checkin-text">Your heart rate has stayed high. If we don't hear from you, we'll let your caregiver know.</p>
-        <button type="button" class="big ok" id="checkin-ok">I'm OK</button>
-        <button type="button" class="big help" id="checkin-help">I need help</button>
-        <button type="button" class="pill quiet" id="checkin-close" hidden>Close</button>
+        <div class="ck-icon help" id="ck-icon" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7l8 6 8-6"/><rect x="3" y="5" width="18" height="14" rx="2"/></svg>
+        </div>
+        <h2 id="ck-title">Are you OK?</h2>
+        <p id="ck-text">Your heart rate has stayed high. If we don't hear from you, we'll let Alex know.</p>
       </div>
+      <div class="ck-actions">
+        <button type="button" class="big ok" id="checkin-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>I'm OK</button>
+        <button type="button" class="big help" id="checkin-help"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4.5"/><path d="M12 17.5h.01"/></svg>I need help</button>
+        <button type="button" class="big plain" id="checkin-close" hidden>Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Demo controls (prototype only) -->
+  <dialog class="sheet" id="demo-sheet" aria-labelledby="demo-title">
+    <div class="sheet-inner">
+      <div class="sheet-head">
+        <div><h2 id="demo-title">Demo states</h2><p>Drives the same render functions the live socket uses</p></div>
+        <button type="button" class="close" data-close aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+      </div>
+      <div class="sheet-body" id="demo-body"></div>
     </div>
   </dialog>
 
   <audio id="player" preload="auto"></audio>
 
   <script>
+    "use strict";
+    // ======================================================================
+    // Data shapes are the backend's (ai/contracts.py, backend/walk.py, backend/caregiver.py).
+    // Render functions keep the existing page's names: renderReading, renderAlert, renderWalk,
+    // renderCheckin, renderStatus, renderPatient, renderAllAlerts, so the socket code drops in.
+    // ======================================================================
     const OFFLINE_AFTER_MS = 6000;
-    const RECENT_SHOWN = 3;
+    const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+    const LEVEL_LABELS = { normal: "You're doing well", monitor: "Keeping an eye on it", notify: "Please check in", escalate: "Get help now" };
+    const LEVEL_SHORT = { normal: "Normal", monitor: "Keeping an eye", notify: "Check in", escalate: "Get help" };
+    const NO_RECOVERY = { recovery_tau_s: null, hr_drop_60s: null, recovery_ratio: null, recovery_percentile: null, recovery_verdict: null };
+
+    // ---------- Mock data (FinchNode demo patient) ----------
     const MOCK_PATIENT = {
-      patient_id: "demo-1", age: 71, risk_tier: "high",
-      conditions: ["hypertension", "type 2 diabetes"],
-      medications: ["metoprolol", "metformin"],
+      patient_id: "patient-demo-polypharmacy", age: 78, risk_tier: "high", clinic_resting_hr: 73.5,
+      conditions: ["Atrial fibrillation", "Heart failure", "Chronic kidney disease stage 3", "Essential hypertension",
+        "Type 2 diabetes mellitus", "Hyperlipidemia", "Hypothyroidism", "Osteoarthritis of knee",
+        "Gastroesophageal reflux disease", "Insomnia"],
+      medications: ["24 HR metoprolol succinate 50 MG Extended Release Oral Tablet", "apixaban 5 MG Oral Tablet",
+        "furosemide 40 MG Oral Tablet", "lisinopril 10 MG Oral Tablet", "atorvastatin 40 MG Oral Tablet",
+        "metformin hydrochloride 500 MG Oral Tablet", "levothyroxine sodium 0.075 MG Oral Tablet",
+        "omeprazole 20 MG Delayed Release Oral Capsule", "acetaminophen 500 MG Oral Tablet", "sertraline 50 MG Oral Tablet",
+        "trazodone hydrochloride 50 MG Oral Tablet", "potassium chloride 20 MEQ Extended Release Oral Tablet",
+        "cholecalciferol 0.025 MG Oral Tablet", "aspirin 81 MG Oral Tablet"],
       config: { min_quality: 0.6, persist_s: 30, deviation_trigger: 2.0, cooldown_s: 120 }
     };
-    const NO_RECOVERY = {
-      recovery_tau_s: null, hr_drop_60s: null, recovery_ratio: null,
-      recovery_percentile: null, recovery_verdict: null
+    const MOCK_STATUS = {
+      patient_source: "finchnode", caregiver_name: "Alex",
+      record_effects: [
+        "High risk: alerts if your resting heart rate stays 8+ bpm above your usual for 30 seconds.",
+        "Atrial fibrillation: an irregular beat is expected, so it isn't treated as a bad signal.",
+        "Clinic heart rate 74: used as your starting point until the glasses learn your usual rate (about a minute of sitting still).",
+        "On metoprolol: recovery after activity is compared with people on similar medication."
+      ]
     };
-    const MOCK_READING = {
-      t: Date.now(), hr: 72, ibi_ms: null, activity: "resting", quality: 0.9,
-      baseline_hr: 68, deviation: 0.4, persist_s: 12, ...NO_RECOVERY, signal_status: "ok"
+    const reading = (hr, extra) => Object.assign({ t: Date.now(), hr: hr, ibi_ms: null, activity: "resting", quality: 0.88,
+      baseline_hr: 68, deviation: (hr - 68) / 6, persist_s: 0, signal_status: "ok" }, NO_RECOVERY, extra || {});
+    const ALERTS = {
+      normal: () => ({ t: Date.now(), level: "normal", confidence: 0.9, headline: "Back within your usual range",
+        reason: "Your heart rate has come back down to 71, close to your usual 68 at rest.",
+        voice_text: "Your heart rate is back within your usual range. I'll keep monitoring.", next_step: "No action needed",
+        reading: reading(71, { recovery_verdict: "normal", recovery_tau_s: 45, hr_drop_60s: 30 }) }),
+      monitor: () => ({ t: Date.now(), level: "monitor", confidence: 0.65, headline: "A little higher than usual",
+        reason: "Your heart rate is 84 while you're sitting still, about 16 above your usual 68. It's early, so we're just keeping an eye on it.",
+        voice_text: "Your heart rate is a little higher than usual. Take it easy for a few minutes.", next_step: "Rest for a few minutes",
+        reading: reading(84, { persist_s: 20 }) }),
+      notify: () => ({ t: Date.now(), level: "notify", confidence: 0.82, headline: "Heart rate has stayed high while you rest",
+        reason: "Your heart rate has been around 104 beats per minute for the last 90 seconds while you've been sitting still, about 36 above your usual resting rate of 68. Because you have atrial fibrillation and take metoprolol, a rise this large at rest is worth checking, even if you feel fine. It may be something simple, like a missed dose or a warm room, but please sit down and notice how you feel.",
+        voice_text: "Your heart rate has stayed high while you're resting. Please sit down and check your phone.", next_step: "Sit down and notice how you feel",
+        reading: reading(104, { persist_s: 90, quality: 0.86 }) }),
+      escalate: () => ({ t: Date.now(), level: "escalate", confidence: 0.91, headline: "Still high after several minutes",
+        reason: "Your heart rate has stayed around 128 for more than 4 minutes at rest, nearly double your usual 68. With heart failure and atrial fibrillation, this needs attention now. If you feel short of breath, dizzy, or have chest pain, call emergency services.",
+        voice_text: "Your heart rate has been very high for several minutes. Please sit down and call your care team now.", next_step: "Sit down and call your care team now",
+        reading: reading(128, { persist_s: 250, quality: 0.84 }) })
     };
-    // Tiny silent WAV, played on tap to unlock audio on mobile browsers.
-    const SILENT_WAV = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
-
-    // Plain-English status for each level (the level is never shown by color alone).
-    const LEVEL_LABELS = {
-      normal: "You're doing well",
-      monitor: "Keeping an eye on it",
-      notify: "Please check in",
-      escalate: "Get help now"
-    };
-    const LEVEL_SHORT = { normal: "Normal", monitor: "Keeping an eye", notify: "Check in", escalate: "Get help" };
 
     const state = {
-      live: false,
-      mock: false,
-      soundOn: false,
-      patient: null,
-      lastReading: null,
-      lastAlert: null,
-      lastReadingAt: null,
-      storedOnly: false,
-      sensorOffline: false,
-      signalPoor: false,
-      currentLevel: null,
-      history: [],
-      socket: null,
-      retryMs: 1000
+      live: false, mock: false, soundOn: false, missed: false, patient: null, lastReading: null, lastAlert: null,
+      lastReadingAt: null, storedOnly: false, sensorOffline: false, signalPoor: false, currentLevel: null,
+      history: [], socket: null, retryMs: 1000, walk: null, walkDismissed: false, walkStartLocal: null,
+      checkin: null, caregiverName: null, patientSource: null, feedPaused: false, trend: []
     };
+    const TREND_MS = 10 * 60000;
 
     const $ = (id) => document.getElementById(id);
-    const fmtTime = (t) => new Date(t).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const fmtDateTime = (t) => new Date(t).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    const fmtTime = (t) => new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+    const fmtDateTime = (t) => new Date(t).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
+    const minQuality = () => (state.patient && state.patient.config ? state.patient.config.min_quality : 0.6);
+    const urgent = () => state.currentLevel === "notify" || state.currentLevel === "escalate";
 
     function setLink(text, kind) {
-      const el = $("link");
-      el.textContent = text;
-      el.className = "conn" + (kind ? " " + kind : "");
+      $("link-text").textContent = text;
+      $("link").className = "conn" + (kind ? " " + kind : "");
     }
 
-    function minQuality() {
-      return state.patient && state.patient.config ? state.patient.config.min_quality : 0.6;
+    // ======================================================================
+    // The answer panel
+    // ======================================================================
+    function walkActive() {
+      const w = state.walk;
+      return !!w && (w.phase === "walking" || w.phase === "recovering" || (w.phase === "done" && !state.walkDismissed));
+    }
+    function walkWhere() {
+      const w = state.walk, r = state.lastReading;
+      if (!w || w.zone_low == null || !r || r.hr == null) return null;
+      return r.hr > w.zone_high ? "above" : r.hr < w.zone_low ? "below" : "in";
     }
 
-    // Status line + heartbeat state.
     function renderHero() {
-      const hero = $("hero");
-      const level = state.currentLevel;
-      hero.dataset.level = level || "";
-      $("badge").textContent = level
-        ? (LEVEL_LABELS[level] || level)
-        : state.lastReading ? "Monitoring your heart" : "Getting ready";
-      const offline = !state.mock && $("offline-banner").hidden === false;
-      const paused = state.signalPoor || offline || state.lastReading == null || state.lastReading.hr == null;
-      hero.classList.toggle("is-paused", paused);
-      hero.classList.toggle("is-live", !paused);
+      const panel = $("panel");
+      const r = state.lastReading;
+      const offline = !$("banner").hidden && $("banner").dataset.which === "offline";
+      const paused = state.signalPoor || offline || !r || r.hr == null;
+      panel.classList.toggle("is-paused", paused);
+      panel.classList.toggle("is-live", !paused);
+
+      let level = state.currentLevel || "";
+      let title, step, act = false;
+      const w = state.walk;
+      if (walkActive() && !urgent()) {
+        // Walk mode takes over the panel unless an alert needs attention.
+        if (w.phase === "walking") {
+          const where = walkWhere();
+          title = where === "above" ? "Above your zone" : where === "below" ? "Below your zone" : where === "in" ? "In your zone" : "Walking";
+          step = where === "above" ? "Slow down a little" : where === "below" ? "Walk at a pace that feels comfortable" : "Keep this pace";
+          level = where === "above" ? "notify" : where === "in" ? "normal" : "";
+          act = where === "above";
+        } else if (w.phase === "recovering") {
+          title = "Stand or sit still"; step = "Checking how your heart settles"; level = ""; act = true;
+        } else {
+          title = w.recovery_ok == null ? "Walk finished" : w.recovery_ok ? "Healthy recovery" : "Slower recovery";
+          step = w.recovery_ok === false ? "Take it easy today" : "Nice walk";
+          level = w.recovery_ok === false ? "monitor" : "normal";
+        }
+      } else if (state.currentLevel) {
+        title = LEVEL_LABELS[state.currentLevel] || state.currentLevel;
+        const a = state.lastAlert;
+        step = a && a.next_step ? a.next_step : "Nothing you need to do";
+        if (/^no action/i.test(step)) step = "Nothing you need to do";
+        act = state.currentLevel !== "normal";
+      } else {
+        title = r ? "Monitoring your heart" : "Getting ready";
+        step = r ? "Nothing you need to do" : "Put on your glasses";
+      }
+      panel.dataset.level = level;
+      panel.dataset.act = act ? "1" : "0";
+      $("badge").textContent = title;
+      $("next-step").textContent = step;
+      renderRail();
     }
 
-    // ---------- Readings ----------
+    // Rail: usual vs now; in a walk, the zone vs now.
+    function renderRail() {
+      const r = state.lastReading;
+      const hr = r && r.hr != null ? Math.round(r.hr) : null;
+      const w = state.walk;
+      const inWalk = walkActive() && w && w.zone_low != null && w.phase === "walking" && !urgent();
+      const usual = r && r.baseline_hr != null ? Math.round(r.baseline_hr) : null;
+      let lo, hi;
+      if (inWalk) { lo = w.zone_low - 30; hi = w.zone_high + 30; }
+      else { const base = usual != null ? usual : 70; lo = base - 25; hi = Math.max(base + 65, (hr || 0) + 12); }
+      const pct = (v) => Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100));
+      const band = $("rail-band"), fill = $("rail-fill"), tick = $("rail-usual"), mark = $("rail-mark");
+      mark.hidden = hr == null;
+      if (hr != null) mark.style.left = pct(hr) + "%";
+      if (inWalk) {
+        band.hidden = false; fill.hidden = true; tick.hidden = true;
+        band.style.left = pct(w.zone_low) + "%"; band.style.width = (pct(w.zone_high) - pct(w.zone_low)) + "%";
+        $("rail-left").innerHTML = "Your zone: <b>" + w.zone_low + "–" + w.zone_high + "</b>";
+        $("rail-right").textContent = hr == null ? "" : walkWhere() === "in" ? "In zone" : walkWhere() === "above" ? (hr - w.zone_high) + " above zone" : (w.zone_low - hr) + " below zone";
+        return;
+      }
+      band.hidden = true;
+      tick.hidden = usual == null;
+      if (usual == null) {
+        fill.hidden = true;
+        $("rail-left").textContent = "Still learning your usual";
+        $("rail-right").textContent = "";
+        return;
+      }
+      tick.style.left = pct(usual) + "%";
+      $("rail-left").innerHTML = "Your usual: <b>" + usual + "</b>";
+      if (hr == null) { fill.hidden = true; $("rail-right").textContent = ""; return; }
+      const diff = hr - usual;
+      fill.hidden = Math.abs(diff) < 3;
+      fill.style.left = pct(Math.min(hr, usual)) + "%";
+      fill.style.width = Math.abs(pct(hr) - pct(usual)) + "%";
+      $("rail-right").innerHTML = Math.abs(diff) < 3 ? "Right at your usual" : "<b>" + (diff > 0 ? "+" : "−") + Math.abs(diff) + "</b> " + (diff > 0 ? "above usual" : "below usual");
+    }
+
+    // ======================================================================
+    // Readings
+    // ======================================================================
     function renderReading(r) {
       state.lastReading = r;
       state.lastReadingAt = Date.now();
       $("hr").textContent = r.hr == null ? "—" : String(Math.round(r.hr));
-      if (r.hr != null && r.hr > 20) {
-        document.documentElement.style.setProperty("--beat", (60 / Math.min(r.hr, 220)).toFixed(3) + "s");
-      }
-      const bits = [];
-      if (r.activity) bits.push(r.activity === "resting" ? "At rest" : cap(r.activity));
-      if (r.quality != null) bits.push(r.quality >= minQuality() ? "good signal" : "weak signal");
-      $("meta").textContent = bits.join(" · ") || "Measuring…";
-      queueFit();
+      if (r.hr != null && r.hr > 20) document.documentElement.style.setProperty("--beat", (60 / Math.min(r.hr, 220)).toFixed(3) + "s");
       const poor = r.signal_status ? r.signal_status === "poor" : (r.quality == null || r.quality < minQuality());
       state.signalPoor = poor;
-      $("quality-banner").hidden = !poor;
       state.sensorOffline = r.signal_status === "offline";
+      if (r.hr != null && !poor) {
+        state.trend.push({ t: Date.now(), hr: r.hr });
+        const cutoff = Date.now() - TREND_MS;
+        while (state.trend.length && state.trend[0].t < cutoff) state.trend.shift();
+        if (!$("trend").hidden) drawTrend();
+      }
       renderWhy(r, null);
-      updateWalkLive();
       tick();
+      updateWalkLive();
     }
 
-    // The Why? sheet: one plain sentence, then the numbers behind it.
+    function renderMeta() {
+      const r = state.lastReading;
+      const bits = [];
+      if (r && r.activity) bits.push(r.activity === "resting" ? "At rest" : cap(r.activity));
+      let when;
+      if (state.mock && !state.feedPaused) when = "example";
+      else if (state.storedOnly) when = "last saved";
+      else if (state.lastReadingAt == null) when = "waiting";
+      else {
+        const secs = Math.max(0, Math.round((Date.now() - state.lastReadingAt) / 1000));
+        when = secs < 3 ? "just now" : secs + " s ago";
+      }
+      bits.push(when);
+      $("meta").textContent = r ? bits.join(" · ") : "No reading yet";
+    }
+
+    // The Why sheet: one plain sentence, then the numbers behind it.
     function renderWhy(r, alert) {
       if (alert) state.lastAlert = alert;
       if (!r) return;
@@ -645,7 +914,10 @@
       $("why-hr").textContent = hr == null ? "—" : hr + " bpm";
       $("why-usual").textContent = usual == null ? "Still learning" : usual + " bpm";
       $("why-dev").textContent = diff == null ? "—" : (diff > 0 ? "+" : "") + diff + " bpm";
-      $("why-persist").textContent = held ? held + " seconds" : "—";
+      $("why-hr-big").textContent = hr == null ? "—" : hr;
+      $("why-usual-big").textContent = usual == null ? "—" : usual;
+      $("why-dev-big").textContent = diff == null ? "—" : (diff > 0 ? "+" : "") + diff;
+      $("why-persist").textContent = held ? (held >= 120 ? Math.round(held / 60) + " minutes" : held + " seconds") : "—";
       $("why-activity").textContent = r.activity === "moving" ? "Moving" : r.activity === "resting" ? "Resting" : "—";
       $("why-quality").textContent = r.quality == null ? "Unknown" : (r.quality >= minQuality() ? "Good" : "Weak") + " (" + Number(r.quality).toFixed(2) + ")";
       const verdicts = { normal: "Normal", slow: "Slow", very_slow: "Very slow" };
@@ -654,121 +926,182 @@
         : "No recent activity";
       const a = state.lastAlert;
       $("why-confidence").textContent = a && a.confidence != null ? Math.round(a.confidence * 100) + "%" : "—";
-
       let text;
-      if (hr == null) {
-        text = "We don't have a trustworthy heart rate right now, so we're not making any calls.";
-      } else if (usual == null) {
-        text = "Your heart rate is " + hr + ". We're still learning your usual resting rate, which takes about a minute of sitting still.";
-      } else {
+      if (hr == null) text = "We don't have a trustworthy heart rate right now, so we're not making any calls.";
+      else if (usual == null) text = "Your heart rate is " + hr + ". We're still learning your usual resting rate, which takes about a minute of sitting still.";
+      else {
         const where = diff >= 0 ? diff + " above" : -diff + " below";
         text = "Your heart rate is " + hr + ", " + where + " your usual " + usual;
-        text += held >= 2 ? " for " + held + " seconds" : "";
+        text += held >= 2 ? " for " + (held >= 120 ? Math.round(held / 60) + " minutes" : held + " seconds") : "";
         text += r.activity === "moving" ? ", while you're moving." : r.activity === "resting" ? ", while you're resting." : ".";
         if (r.quality != null && r.quality < minQuality()) text += " The signal is weak, so this reading isn't used for alerts.";
       }
       $("why-summary").textContent = text;
     }
 
-    // ---------- Alerts ----------
+    // ======================================================================
+    // Alerts
+    // ======================================================================
     function renderAlert(a, live) {
       state.currentLevel = a.level || null;
-      $("alert-card").dataset.level = a.level || "";
+      state.lastAlert = a;
+      const card = $("update");
+      card.dataset.level = a.level || "";
       $("headline").textContent = a.headline || "Alert";
       $("reason").textContent = a.reason || "";
-      $("next-step").textContent = a.next_step || "—";
+      $("u-time").innerHTML = "";
+      const dot = document.createElement("span"); dot.className = "lvl-dot"; dot.dataset.level = a.level || "";
+      $("u-time").append(dot, document.createTextNode((LEVEL_SHORT[a.level] || "") + " · " + fmtTime(a.t)));
       $("why-what").textContent = (a.headline ? a.headline + ". " : "") + (a.reason || "");
-      $("why-what").hidden = $("why-what-title").hidden = !(a.headline || a.reason);
+      $("why-what-sec").hidden = !(a.headline || a.reason);
       renderWhy(a.reading || state.lastReading, a);
-      renderHero();
       if (live) {
-        replay($("alert-card"), "arrived");
-        if (a.level === "notify" || a.level === "escalate") replay($("hero"), "calling");
+        replay(card, "arrived");
+        if (a.level === "notify" || a.level === "escalate") replay($("panel"), "calling");
         state.history.unshift(a);
         state.history = state.history.slice(0, 50);
-        renderHistory();
       }
-      $("simulate-label").textContent = a.level === "notify" || a.level === "escalate" ? "Recover" : "Test";
+      $("simulate-label").textContent = urgent() ? "Send recovery" : "Send a test alert";
+      renderHistory();
+      renderHero();
+      renderFeed();
+    }
+
+    function renderHistory() {
+      const n = state.history.length;
+      $("alert-count").hidden = n === 0;
+      $("alert-count").textContent = n > 99 ? "99+" : String(n);
       queueFit();
     }
 
-    // ---------- Guided walk ----------
-    function fmtClock(ms) {
-      const sec = Math.max(0, Math.floor(ms / 1000));
-      return Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
+    // Level icons (from design A): check, eye, "!" circle, warning triangle.
+    const LEVEL_ICON = {
+      normal: '<path d="M5 12.5l4.2 4.2L19 7"/>',
+      monitor: '<path d="M2.5 12s3.5-6.5 9.5-6.5 9.5 6.5 9.5 6.5-3.5 6.5-9.5 6.5S2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.6"/>',
+      notify: '<circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5"/><path d="M12 16.6h.01"/>',
+      escalate: '<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5"/><path d="M12 17.4h.01"/>'
+    };
+    function levelIcon(level) {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("viewBox", "0 0 24 24"); svg.setAttribute("fill", "none"); svg.setAttribute("stroke", "currentColor");
+      svg.setAttribute("stroke-width", "2.2"); svg.setAttribute("stroke-linecap", "round"); svg.setAttribute("stroke-linejoin", "round");
+      svg.setAttribute("aria-hidden", "true"); svg.setAttribute("class", "lvl-icon"); svg.dataset.level = level || "";
+      svg.innerHTML = LEVEL_ICON[level] || LEVEL_ICON.notify;  // constant markup, never server data
+      return svg;
     }
-    function renderWalk(w) {
-      state.walk = w;
-      const active = w && (w.phase === "walking" || w.phase === "recovering" || (w.phase === "done" && !state.walkDismissed));
-      document.body.classList.toggle("walk-on", !!active);
-      $("walk-panel").hidden = !active;
-      const btn = $("walk-btn");
-      btn.classList.toggle("on", !!w && w.phase === "walking");
-      btn.disabled = !!w && w.phase === "recovering";
-      $("walk-label").textContent = w && w.phase === "walking" ? "End walk" : w && w.phase === "recovering" ? "Checking" : "Walk";
-      if (!active) return queueFit();
-      if (w.zone_low != null) {
-        $("zone-text").textContent = "Your zone " + w.zone_low + "–" + w.zone_high;
-        const lo = w.zone_low - 25, hi = w.zone_high + 25;
-        const pct = (v) => Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100));
-        $("zone-band").style.left = pct(w.zone_low) + "%";
-        $("zone-band").style.width = (pct(w.zone_high) - pct(w.zone_low)) + "%";
-        state.walkScale = pct;
+
+    function renderEarlier(limit) {
+      const list = $("earlier-list");
+      list.replaceChildren();
+      const rest = state.history.slice(1, 1 + limit);
+      $("earlier").hidden = rest.length === 0;
+      for (const a of rest) {
+        const li = document.createElement("li");
+        const dot = levelIcon(a.level);
+        const text = document.createElement("span"); text.className = "e-text";
+        text.textContent = (LEVEL_SHORT[a.level] ? LEVEL_SHORT[a.level] + ": " : "") + (a.headline || "");
+        const time = document.createElement("span"); time.className = "e-time"; time.textContent = fmtTime(a.t);
+        li.append(dot, text, time);
+        list.append(li);
       }
-      $("walk-done").hidden = w.phase !== "done";
-      if (w.phase === "walking") {
-        $("walk-title").textContent = "Walking";
-        $("walk-tip").textContent = w.last_tip || "I'll speak up only if you go above your zone.";
-      } else if (w.phase === "recovering") {
-        $("walk-title").textContent = "Resting after your walk";
-        state.recoveryDue = Date.now() + (w.recovery_remaining_s || 0) * 1000;
-      } else if (w.phase === "done") {
-        $("walk-title").textContent = w.recovery_ok == null ? "Walk finished" : w.recovery_ok ? "Healthy recovery" : "Slower recovery";
-        $("walk-clock").textContent = w.minutes != null ? w.minutes + " min" : "";
-        $("walk-tip").textContent = w.drop_1min == null ? "No clear reading for the recovery check."
-          : "Heart rate dropped " + Math.max(0, Math.round(w.drop_1min)) + " bpm in the first minute.";
+    }
+
+    function renderAllAlerts(alerts) {
+      const list = $("all-alerts");
+      list.replaceChildren();
+      $("all-count").textContent = alerts.length ? alerts.length + (alerts.length === 1 ? " alert" : " alerts") + " · newest first" : "Nothing yet";
+      if (!alerts.length) {
+        const li = document.createElement("li"); li.className = "empty"; li.textContent = "No alerts yet. When something changes, it will be listed here.";
+        list.append(li);
       }
-      updateWalkLive();
+      for (const a of alerts) {
+        const li = document.createElement("li");
+        const top = document.createElement("div"); top.className = "a-top";
+        const lvl = document.createElement("span"); lvl.className = "a-lvl";
+        const dot = document.createElement("span"); dot.className = "lvl-dot"; dot.dataset.level = a.level || "";
+        lvl.append(dot, document.createTextNode(LEVEL_SHORT[a.level] || a.level || "—"));
+        const time = document.createElement("span"); time.className = "u-time"; time.textContent = fmtDateTime(a.t);
+        top.append(lvl, time);
+        const head = document.createElement("p"); head.className = "a-head"; head.textContent = a.headline || "";
+        const reason = document.createElement("p"); reason.className = "a-reason"; reason.textContent = a.reason || "";
+        li.append(top, head, reason);
+        list.append(li);
+      }
+    }
+
+    // Feed: update card normally; the walk coach while walking (unless an alert needs attention).
+    function renderFeed() {
+      const showWalk = walkActive() && !urgent();
+      $("walkcard").hidden = !showWalk;
+      $("update").hidden = showWalk;
       queueFit();
     }
-    // Zone marker, clock and recovery countdown, from the latest reading.
+
+    // ======================================================================
+    // Guided walk
+    // ======================================================================
+    const fmtClock = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+    const WRING = 194.8;
+    function renderWalk(w) {
+      state.walk = w;
+      const btn = $("walk-btn");
+      const phase = w ? w.phase : "idle";
+      btn.classList.toggle("on", phase === "walking");
+      btn.disabled = phase === "recovering";
+      $("walk-label").textContent = phase === "walking" ? "End walk" : phase === "recovering" ? "Checking…" : "Walk";
+      if (walkActive()) {
+        $("walk-recover").hidden = phase !== "recovering";
+        $("walk-drop").hidden = !(phase === "done" && w.drop_1min != null);
+        $("walk-done").hidden = phase !== "done";
+        $("walk-tip-row").hidden = phase === "recovering";
+        $("walk-zone-note").hidden = phase !== "walking" || !w.zone_note;
+        $("walk-zone-note").textContent = w.zone_note ? "Zone " + w.zone_low + "–" + w.zone_high + ": " + w.zone_note + "." : "";
+        if (phase === "walking") {
+          $("walk-title").textContent = "Guided walk";
+          $("walk-tip").textContent = w.last_tip || "I'll only speak up if you go above your zone.";
+        } else if (phase === "recovering") {
+          $("walk-title").textContent = "Recovery check";
+          state.recoveryDue = Date.now() + (w.recovery_remaining_s || 0) * 1000;
+          state.recoveryTotal = Math.max(1, w.recovery_due && w.ended_at ? (w.recovery_due - w.ended_at) / 1000 : (w.recovery_remaining_s || 60));
+        } else {
+          $("walk-title").textContent = "Your walk";
+          $("walk-clock").textContent = w.minutes != null ? w.minutes + " min" : "";
+          if (w.drop_1min != null) {
+            $("walk-drop-n").textContent = Math.max(0, Math.round(w.drop_1min));
+            $("walk-drop-text").textContent = "bpm drop in the first minute";
+          }
+          $("walk-tip").textContent = w.drop_1min == null ? "No clear reading for the recovery check this time."
+            : w.recovery_ok ? "That's a healthy recovery." : "Slower than expected. Mention it to your care team if it keeps happening.";
+        }
+      }
+      renderHero();
+      renderFeed();
+      updateWalkLive();
+    }
     function updateWalkLive() {
       const w = state.walk;
-      if (!w || $("walk-panel").hidden) return;
-      const hr = state.lastReading && state.lastReading.hr;
-      const status = $("walk-status");
+      if (!w || !walkActive()) return;
       if (w.phase === "walking") {
         $("walk-clock").textContent = fmtClock(Date.now() - (state.walkStartLocal || Date.now()));
-        if (hr != null && state.walkScale) {
-          $("zone-mark").hidden = false;
-          $("zone-mark").style.left = state.walkScale(hr) + "%";
-          const where = hr > w.zone_high ? "above" : hr < w.zone_low ? "below" : "in";
-          status.className = where;
-          status.textContent = Math.round(hr) + " · " + (where === "in" ? "in zone" : where === "above" ? "above zone" : "below zone");
-        }
+        renderHero();
       } else if (w.phase === "recovering") {
         const left = Math.max(0, Math.ceil((state.recoveryDue - Date.now()) / 1000));
-        $("walk-clock").textContent = left + " s";
-        $("walk-tip").textContent = "Stand or sit still. Checking your recovery in " + left + " s.";
-        status.textContent = hr != null ? Math.round(hr) + " now" : "";
-        status.className = "";
-      } else {
-        status.textContent = "";
-        $("zone-mark").hidden = true;
+        $("walk-clock").textContent = "";
+        $("walk-left").textContent = left;
+        $("walk-ring").setAttribute("stroke-dashoffset", String(WRING * (1 - left / state.recoveryTotal)));
+        const hr = state.lastReading && state.lastReading.hr;
+        $("walk-recover-text").textContent = "Stand or sit still. " + (w.hr_at_stop != null && hr != null
+          ? "From " + Math.round(w.hr_at_stop) + " at the end of your walk to " + Math.round(hr) + " now."
+          : "We're checking how fast your heart settles.");
+        if (left <= 0 && w.local) finishLocalWalk();
       }
     }
     setInterval(updateWalkLive, 500);
+
     $("walk-btn").addEventListener("click", async function () {
       const w = state.walk;
       const starting = !w || w.phase !== "walking";
-      if (!state.live) {
-        // Offline preview: a local walk with an example zone.
-        state.walkDismissed = false;
-        state.walkStartLocal = Date.now();
-        return renderWalk(starting
-          ? { phase: "walking", zone_low: 88, zone_high: 98, last_tip: "Example walk (no server connected)." }
-          : { phase: "done", minutes: 1, drop_1min: 24, recovery_ok: true });
-      }
+      if (!state.live) return starting ? demo.walkStart() : demo.walkStop();
       try {
         const res = await fetch(starting ? "/walk/start" : "/walk/stop", { method: "POST" });
         if (res.ok) {
@@ -779,133 +1112,126 @@
       } catch (err) {}
     });
     $("walk-done").addEventListener("click", function () { state.walkDismissed = true; renderWalk(state.walk); });
-    function speakLine(text, audioUrl) {
-      if (!state.soundOn) return;
-      if (audioUrl) {
-        const player = $("player");
-        player.src = audioUrl;
-        player.play().catch(() => speakWithBrowser(text));
-      } else {
-        speakWithBrowser(text);
-      }
-    }
 
-    // ---------- Fit to one screen ----------
-    // Squeeze the card step by step until the alerts header has room, then show as many
-    // recent alerts as fit (0-3). Runs on load, resize, and whenever content changes.
-    const SQUEEZES = ["squeeze-1", "squeeze-2", "squeeze-3", "squeeze-4"];
+    // ======================================================================
+    // Fit to one screen: no page scroll, ever.
+    // The feed row is the only flexible one. In it: the reason text gets up to 5 lines,
+    // then earlier alerts fill what's left (0-3 rows). On very short screens the panel
+    // tightens (compact) before the reason drops below 2 lines.
+    // ======================================================================
     function fit() {
-      const body = document.body;
-      const recent = document.querySelector(".recent");
-      const head = document.querySelector(".recent-head");
-      const shell = document.querySelector(".shell");
-      body.classList.remove(...SQUEEZES);
-      const roomForHead = () => recent.clientHeight >= head.offsetHeight + 8 && shell.scrollHeight <= shell.clientHeight + 1;
-      for (const level of SQUEEZES) {
-        if (roomForHead()) break;
-        body.classList.add(level);
-      }
-      renderHistoryRows(RECENT_SHOWN);
-      while ($("history").children.length > 0 && recent.scrollHeight > recent.clientHeight + 1) {
-        $("history").lastElementChild.remove();
-      }
+      const body = document.body, feed = $("feed"), app = $("app");
+      app.classList.toggle("no-banner", $("banner").hidden);
+      body.classList.remove("compact", "compact2");
+      const over = () => feed.scrollHeight > feed.clientHeight + 1 || app.scrollHeight > app.clientHeight + 1 || document.documentElement.scrollHeight > window.innerHeight + 1;
+      const setClamp = (n) => { $("reason").style.setProperty("--clamp", n); $("walk-tip").style.setProperty("--clamp", n); };
+      const run = (minClamp) => {
+        setClamp(6); renderEarlier(3);
+        for (let rows = 3; rows > 0 && over(); rows--) renderEarlier(rows - 1);
+        for (let c = 5; c >= minClamp && over(); c--) setClamp(c);
+        return !over();
+      };
+      $("trend").hidden = true;
+      if (run(2)) return showTrend(over);
+      body.classList.add("compact");
+      if (run(2)) return;
+      body.classList.add("compact2");
+      run(1);
+    }
+    function showTrend(over) {
+      if (state.trend.length < 4) return;
+      $("trend").hidden = false;
+      if (over()) { $("trend").hidden = true; return; }
+      drawTrend();
     }
     let fitQueued = false;
     function queueFit() {
       if (fitQueued) return;
       fitQueued = true;
-      requestAnimationFrame(function () { fitQueued = false; fit(); });
+      requestAnimationFrame(() => { fitQueued = false; fit(); });
     }
     window.addEventListener("resize", queueFit);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(queueFit);
 
-    // Restart a one-shot CSS animation.
-    function replay(el, cls) {
-      el.classList.remove(cls);
-      void el.offsetWidth;
-      el.classList.add(cls);
-    }
-
-    function renderHistory() {
-      const n = state.history.length;
-      $("history-hint").textContent = n > 1 ? "See all " + n : "See all";
-      $("open-history").hidden = n === 0;
-      queueFit();
-    }
-
-    function renderHistoryRows(limit) {
-      const list = $("history");
-      list.replaceChildren();
-      const n = state.history.length;
-      if (!n) {
-        const li = document.createElement("li");
-        li.className = "empty";
-        li.textContent = "No alerts yet. You'll see them here.";
-        list.append(li);
-        return;
+    // ---------- Trend sparkline (one series, named by its title; usual is a dashed reference) ----------
+    const NS = "http://www.w3.org/2000/svg";
+    let trendGeom = null;
+    function drawTrend() {
+      const svg = $("trend-svg"), box = $("trend-plot");
+      const W = box.clientWidth, H = box.clientHeight;
+      svg.replaceChildren();
+      const pts = state.trend;
+      if (W < 20 || H < 20 || pts.length < 2) return;
+      const usual = state.lastReading && state.lastReading.baseline_hr != null ? state.lastReading.baseline_hr : null;
+      const vals = pts.map((p) => p.hr).concat(usual != null ? [usual] : []);
+      let lo = Math.floor(Math.min(...vals) - 6), hi = Math.ceil(Math.max(...vals) + 6);
+      if (hi - lo < 30) { const mid = (hi + lo) / 2; lo = Math.round(mid - 15); hi = Math.round(mid + 15); }
+      const now = Date.now(), t0 = now - TREND_MS, pad = 6;
+      const x = (t) => ((t - t0) / TREND_MS) * (W - pad * 2) + pad;
+      const y = (v) => pad + (1 - (v - lo) / (hi - lo)) * (H - pad * 2);
+      const el = (name, attrs) => { const e = document.createElementNS(NS, name); for (const k in attrs) e.setAttribute(k, attrs[k]); svg.append(e); return e; };
+      const line = pts.map((p, i) => (i ? "L" : "M") + x(p.t).toFixed(1) + " " + y(p.hr).toFixed(1)).join(" ");
+      $("trend-usual-key").hidden = usual == null;
+      if (usual != null) {
+        $("trend-usual-n").textContent = Math.round(usual);
+        el("line", { class: "trend-usual", x1: 0, x2: W, y1: y(usual), y2: y(usual) });
       }
-      for (const a of state.history.slice(0, limit)) {
-        const li = document.createElement("li");
-        const dot = document.createElement("span");
-        dot.className = "h-dot";
-        dot.dataset.level = a.level || "";
-        const text = document.createElement("span");
-        text.className = "h-text";
-        text.textContent = (LEVEL_SHORT[a.level] ? LEVEL_SHORT[a.level] + ": " : "") + (a.headline || "");
-        const time = document.createElement("span");
-        time.className = "h-time";
-        time.textContent = fmtTime(a.t);
-        li.append(dot, text, time);
-        list.append(li);
-      }
+      el("path", { class: "trend-line", d: line });
+      const last = pts[pts.length - 1];
+      el("circle", { class: "trend-now", cx: x(last.t), cy: y(last.hr), r: 5 });
+      trendGeom = { x, pts, H };
+      const hrs = pts.map((p) => Math.round(p.hr));
+      $("trend-range").textContent = Math.min(...hrs) + "–" + Math.max(...hrs) + " bpm";
     }
-
-    function renderAllAlerts(alerts) {
-      const list = $("all-alerts");
-      list.replaceChildren();
-      $("all-count").textContent = alerts.length + (alerts.length === 1 ? " alert" : " alerts") + " · newest first";
-      for (const a of alerts) {
-        const li = document.createElement("li");
-        const top = document.createElement("div");
-        top.className = "a-top";
-        const level = document.createElement("span");
-        level.className = "a-level";
-        level.dataset.level = a.level || "";
-        level.textContent = LEVEL_SHORT[a.level] || a.level || "—";
-        const time = document.createElement("span");
-        time.className = "h-time";
-        time.textContent = fmtDateTime(a.t);
-        top.append(level, time);
-        const head = document.createElement("p");
-        head.className = "a-head";
-        head.textContent = a.headline || "";
-        const reason = document.createElement("p");
-        reason.className = "a-reason";
-        reason.textContent = a.reason || "";
-        li.append(top, head, reason);
-        list.append(li);
+    (function trendHover() {
+      const box = $("trend-plot"), tip = $("trend-tip");
+      function show(e) {
+        if (!trendGeom) return;
+        const rect = box.getBoundingClientRect(), px = e.clientX - rect.left;
+        let best = trendGeom.pts[0];
+        for (const p of trendGeom.pts) if (Math.abs(trendGeom.x(p.t) - px) < Math.abs(trendGeom.x(best.t) - px)) best = p;
+        const cx = trendGeom.x(best.t);
+        const mins = Math.round((Date.now() - best.t) / 60000);
+        tip.textContent = Math.round(best.hr) + " bpm · " + (mins < 1 ? "now" : mins + " min ago");
+        tip.style.left = Math.max(60, Math.min(rect.width - 60, cx)) + "px";
+        tip.hidden = false;
+        let cross = $("trend-svg").querySelector(".trend-cross");
+        if (!cross) { cross = document.createElementNS(NS, "line"); cross.setAttribute("class", "trend-cross"); $("trend-svg").prepend(cross); }
+        cross.setAttribute("x1", cx); cross.setAttribute("x2", cx); cross.setAttribute("y1", 0); cross.setAttribute("y2", trendGeom.H);
       }
-    }
+      function hide() { tip.hidden = true; const c = $("trend-svg").querySelector(".trend-cross"); if (c) c.remove(); }
+      box.addEventListener("pointermove", show);
+      box.addEventListener("pointerdown", show);
+      box.addEventListener("pointerleave", hide);
+      box.addEventListener("pointerup", (e) => { if (e.pointerType !== "mouse") setTimeout(hide, 1500); });
+    })();
 
-    // ---------- Sheets ----------
+    function replay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+    // ======================================================================
+    // Sheets
+    // ======================================================================
     function openSheet(id) {
-      const sheet = $(id);
-      if (typeof sheet.showModal === "function") sheet.showModal();
-      else sheet.setAttribute("open", "");
+      const s = $(id);
+      if (s.open) return;
+      if (typeof s.showModal === "function") s.showModal(); else s.setAttribute("open", "");
     }
-    document.querySelectorAll("dialog.sheet").forEach(function (sheet) {
-      sheet.addEventListener("click", function (e) {
-        if (sheet.hasAttribute("data-locked") && state.checkin && state.checkin.status === "waiting") return;
-        if (e.target === sheet || e.target.closest("[data-close]")) sheet.close ? sheet.close() : sheet.removeAttribute("open");
-      });
+    function closeSheet(s) { if (s.close) s.close(); else s.removeAttribute("open"); }
+    document.querySelectorAll("dialog.sheet").forEach(function (s) {
+      s.addEventListener("click", function (e) { if (e.target === s || e.target.closest("[data-close]")) closeSheet(s); });
     });
-    // Escape must not dismiss a waiting check-in.
-    $("checkin-sheet").addEventListener("cancel", function (e) {
-      if (state.checkin && state.checkin.status === "waiting") e.preventDefault();
+    $("open-why").addEventListener("click", () => openSheet("why-sheet"));
+    $("open-record").addEventListener("click", () => openSheet("record-sheet"));
+    $("open-history").addEventListener("click", async function () {
+      renderAllAlerts(state.history);
+      openSheet("history-sheet");
+      if (state.live) { try { renderAllAlerts(await getJSON("/alerts?limit=200")); } catch (err) {} }
     });
 
-    // ---------- "Are you OK?" check-in ----------
-    const RING = 314.16;
+    // ======================================================================
+    // "Are you OK?" check-in
+    // ======================================================================
+    const CK_RING = 326.73;
     function renderCheckin(c) {
       state.checkin = c;
       if (!c) return;
@@ -914,27 +1240,27 @@
       const waiting = c.status === "waiting";
       $("checkin-ok").hidden = $("checkin-help").hidden = !waiting;
       $("checkin-close").hidden = waiting;
-      $("checkin-ring").hidden = !waiting;
+      $("ck-ring").hidden = !waiting;
+      $("ck-icon").hidden = waiting;
       if (waiting) {
         state.checkinDeadline = Date.now() + (c.remaining_s || 0) * 1000;
         state.checkinTotal = Math.max(1, (c.deadline - c.started_at) / 1000);
-        $("checkin-title").textContent = "Are you OK?";
-        $("checkin-text").textContent = (c.level === "escalate" ? "Your heart rate has stayed high for a while." : "Your heart rate has stayed high.")
+        $("ck-title").textContent = "Are you OK?";
+        $("ck-text").textContent = (c.level === "escalate" ? "Your heart rate has stayed high for a while." : "Your heart rate has stayed high.")
           + " If we don't hear from you, we'll let " + who + " know.";
-        if (!sheet.open) {
-          openSheet("checkin-sheet");
-          if (navigator.vibrate) navigator.vibrate([250, 120, 250]);
-        }
+        if (!sheet.open) { openSheet("checkin-sheet"); if (navigator.vibrate) navigator.vibrate([250, 120, 250]); }
         tickCheckin();
       } else if (c.status === "ok" || c.status === "resolved") {
-        if (sheet.open) sheet.close();
+        if (sheet.open) closeSheet(sheet);
       } else if (c.status === "help") {
-        $("checkin-title").textContent = "Help is on the way";
-        $("checkin-text").textContent = "We've let " + who + " know. Stay seated if you can.";
+        $("ck-icon").className = "ck-icon help";
+        $("ck-title").textContent = "Help is on the way";
+        $("ck-text").textContent = "We've let " + who + " know. Stay seated if you can, and keep your phone nearby.";
         if (!sheet.open) openSheet("checkin-sheet");
       } else if (c.status === "no_response") {
-        $("checkin-title").textContent = "We've let " + who + " know";
-        $("checkin-text").textContent = "You didn't answer, so we sent " + who + " a message.";
+        $("ck-icon").className = "ck-icon sent";
+        $("ck-title").textContent = "We've let " + who + " know";
+        $("ck-text").textContent = "You didn't answer, so we sent " + who + " a message. If you're OK, sit and rest.";
         if (!sheet.open) openSheet("checkin-sheet");
       }
     }
@@ -942,16 +1268,16 @@
       const c = state.checkin;
       if (!c || c.status !== "waiting") return;
       const left = Math.max(0, (state.checkinDeadline - Date.now()) / 1000);
-      $("checkin-count").textContent = String(Math.ceil(left));
-      $("checkin-bar").setAttribute("stroke-dashoffset", String(RING * (1 - left / state.checkinTotal)));
-      if (left <= 0) $("checkin-text").textContent = "Letting " + (state.caregiverName || "your caregiver") + " know…";
-      if (left <= 0 && c.local) renderCheckin({ ...c, status: "no_response" });
+      $("ck-count").textContent = String(Math.ceil(left));
+      $("ck-bar").setAttribute("stroke-dashoffset", String(CK_RING * (1 - left / state.checkinTotal)));
+      if (left <= 0) $("ck-text").textContent = "Letting " + (state.caregiverName || "your caregiver") + " know…";
+      if (left <= 0 && c.local) renderCheckin(Object.assign({}, c, { status: "no_response" }));
     }
     setInterval(tickCheckin, 250);
     async function answerCheckin(answer) {
       const c = state.checkin;
       if (!c || c.status !== "waiting") return;
-      if (c.local) return renderCheckin({ ...c, status: answer });
+      if (c.local) return renderCheckin(Object.assign({}, c, { status: answer }));
       try {
         const res = await fetch("/checkin/" + encodeURIComponent(c.id) + "/respond", {
           method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ answer: answer })
@@ -959,293 +1285,377 @@
         if (res.ok) renderCheckin(await res.json());
       } catch (err) {}
     }
-    $("checkin-ok").addEventListener("click", function () { answerCheckin("ok"); });
-    $("checkin-help").addEventListener("click", function () { answerCheckin("help"); });
-    $("checkin-close").addEventListener("click", function () { $("checkin-sheet").close(); });
-    // Offline preview: the Test button starts a local check-in so the flow can be seen without a server.
+    $("checkin-ok").addEventListener("click", () => answerCheckin("ok"));
+    $("checkin-help").addEventListener("click", () => answerCheckin("help"));
+    $("checkin-close").addEventListener("click", () => closeSheet($("checkin-sheet")));
+    // Escape must not dismiss a waiting check-in.
+    $("checkin-sheet").addEventListener("cancel", function (e) { if (state.checkin && state.checkin.status === "waiting") e.preventDefault(); });
+    // Browsers may ignore preventDefault on Escape without a recent tap, so reopen if it still needs an answer.
+    $("checkin-sheet").addEventListener("close", function () {
+      if (state.checkin && state.checkin.status === "waiting") setTimeout(() => openSheet("checkin-sheet"), 0);
+    });
     function localCheckin(level) {
       const now = Date.now();
       renderCheckin({ id: "local", level: level, status: "waiting", started_at: now, deadline: now + 60000, remaining_s: 60, local: true });
     }
-    $("open-why").addEventListener("click", function () { openSheet("why-sheet"); });
-    $("open-record").addEventListener("click", function () { openSheet("record-sheet"); });
-    $("open-history").addEventListener("click", async function () {
-      renderAllAlerts(state.history);
-      openSheet("history-sheet");
-      if (state.live) {
-        try { renderAllAlerts(await getJSON("/alerts?limit=200")); } catch (err) {}
-      }
-    });
 
-    // ---------- Voice ----------
-    function setSoundButton(label, kind) {
-      $("sound-label").textContent = label;
-      $("sound").className = "pill " + kind;
-      $("sound").setAttribute("aria-pressed", state.soundOn ? "true" : "false");
+    // ======================================================================
+    // Sound
+    // ======================================================================
+    function renderSound() {
+      const mode = state.soundOn ? "on" : state.missed ? "missed" : "off";
+      const btn = $("sound");
+      btn.dataset.mode = mode;
+      btn.setAttribute("aria-pressed", state.soundOn ? "true" : "false");
+      const narrow = window.innerWidth < 360;
+      $("sound-label").textContent = mode === "on" ? "Sound on" : mode === "missed" ? (narrow ? "Missed alert" : "Missed an alert") : (narrow ? "Sound off" : "Turn on sound");
     }
-
-    function speak(alert, audioUrl) {
-      if (!state.soundOn) {
-        setSoundButton("Missed alert", "missed");
-        return;
-      }
-      if (audioUrl) {
-        const player = $("player");
-        player.src = audioUrl;
-        player.play().catch(() => speakWithBrowser(alert.voice_text));
-      } else {
-        speakWithBrowser(alert.voice_text);
-      }
-    }
-
     function speakWithBrowser(text) {
       if (!text || !("speechSynthesis" in window)) return;
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(new SpeechSynthesisUtterance(text));
     }
-
+    function play(text, audioUrl) {
+      if (audioUrl) { const p = $("player"); p.src = audioUrl; p.play().catch(() => speakWithBrowser(text)); }
+      else speakWithBrowser(text);
+    }
+    function speak(alert, audioUrl) {
+      if (!state.soundOn) { state.missed = true; renderSound(); return; }
+      play(alert.voice_text, audioUrl);
+    }
+    function speakLine(text, audioUrl) { if (state.soundOn) play(text, audioUrl); }
     $("sound").addEventListener("click", function () {
+      const wasMissed = state.missed && !state.soundOn;
       state.soundOn = !state.soundOn;
       if (state.soundOn) {
-        const player = $("player");
-        player.src = SILENT_WAV;
-        player.play().catch(() => {});
+        const p = $("player"); p.src = SILENT_WAV; p.play().catch(() => {});
         if ("speechSynthesis" in window) window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
+        state.missed = false;
+        // Tapping "Missed an alert" turns sound on and replays what was said.
+        if (wasMissed && state.lastAlert) setTimeout(() => speakWithBrowser(state.lastAlert.voice_text), 300);
       }
-      setSoundButton(state.soundOn ? "Sound on" : "Sound off", state.soundOn ? "quiet" : "primary");
+      renderSound();
     });
+    window.addEventListener("resize", renderSound);
 
-    // ---------- Patient + status ----------
-    function fillList(id, items, empty) {
-      const list = $(id);
-      list.replaceChildren();
-      for (const text of items.length ? items : [empty]) {
-        const li = document.createElement("li");
-        li.textContent = text;
-        list.append(li);
-      }
-    }
-
+    // ======================================================================
+    // Patient + status + banners
+    // ======================================================================
     function renderPatient(p) {
       state.patient = p;
-      $("patient-line").textContent = "Age " + p.age + " · " + cap(p.risk_tier) + " risk";
-      fillList("conditions", p.conditions || [], "None listed");
-      fillList("medications", p.medications || [], "None listed");
+      $("patient-line").textContent = "Age " + p.age + " · " + cap(p.risk_tier) + " risk" + (p.clinic_resting_hr ? " · clinic heart rate " + Math.round(p.clinic_resting_hr) : "");
+      const conds = $("conditions"); conds.replaceChildren();
+      const heart = /fibrillation|heart|arrhythm|hypertension/i;
+      for (const c of (p.conditions && p.conditions.length ? p.conditions : ["None listed"])) {
+        const li = document.createElement("li"); li.textContent = c; if (heart.test(c)) li.className = "key"; conds.append(li);
+      }
+      const meds = $("medications"); meds.replaceChildren();
+      for (const m of (p.medications && p.medications.length ? p.medications : ["None listed"])) {
+        const li = document.createElement("li");
+        const parts = m.replace(/^24 HR\s+/i, "").match(/^([^\d]+?)\s+([\d.].*)$/);
+        const name = document.createElement("b"); name.textContent = cap(parts ? parts[1] : m);
+        const dose = document.createElement("span"); dose.textContent = parts ? parts[2].replace(/ Oral /, " ").replace(/MG/g, "mg").toLowerCase() : "";
+        li.append(name, dose); meds.append(li);
+      }
     }
 
     function renderStatus(s) {
+      state.patientSource = s.patient_source;
       const tag = $("patient-source");
       const labels = { finchnode: "FinchNode", cache: "cached", local: "built-in", mock: "example" };
       tag.textContent = labels[s.patient_source] || s.patient_source;
       tag.className = "tag" + (s.patient_source === "finchnode" ? "" : " warn");
-      const banner = $("patient-banner");
-      if (s.patient_source === "cache") {
-        $("patient-banner-text").textContent = "Health record service unreachable. Using your last saved record.";
-        banner.hidden = false;
-      } else if (s.patient_source === "local") {
-        $("patient-banner-text").textContent = "Health record unavailable. Using the built-in demo patient.";
-        banner.hidden = false;
-      } else {
-        banner.hidden = true;
-      }
       if (s.caregiver_name) state.caregiverName = s.caregiver_name;
-      const effects = s.record_effects || [];
-      const list = $("record-effects");
-      list.replaceChildren();
-      for (const text of effects) {
-        const li = document.createElement("li");
-        li.textContent = text;
-        list.append(li);
-      }
-      $("effects-title").hidden = !effects.length;
-      queueFit();
+      const list = $("record-effects"); list.replaceChildren();
+      for (const text of s.record_effects || []) { const li = document.createElement("li"); li.textContent = text; list.append(li); }
+      $("effects-sec").hidden = !(s.record_effects || []).length;
+      renderBanner();
     }
 
-    async function getJSON(path) {
-      const res = await fetch(path);
-      if (!res.ok) throw new Error(path + " " + res.status);
-      return res.json();
+    const ICONS = {
+      offline: '<path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><path d="M5 12.9a10 10 0 0 1 5.2-2.8"/><path d="M19 12.9a10 10 0 0 0-2.3-1.7"/><path d="M12 20h.01"/>',
+      signal: '<path d="M3 12h3l2-5 3 10 2-5h2"/><path d="M18 9l4 4M22 9l-4 4"/>',
+      record: '<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h4"/><path d="M12 16h.01"/>'
+    };
+    // One slot, most important first: glasses offline, weak signal, record source.
+    function renderBanner() {
+      const b = $("banner");
+      let which = null, kind = "warn", text = "";
+      const stale = !state.mock || state.feedPaused ? (state.lastReadingAt != null && !state.storedOnly && Date.now() - state.lastReadingAt > OFFLINE_AFTER_MS) : false;
+      if (stale || state.sensorOffline) {
+        which = "offline"; kind = "bad";
+        const secs = Math.round((Date.now() - state.lastReadingAt) / 1000);
+        text = stale ? "Glasses not sending. No data for " + secs + " s." : "Glasses not connected.";
+      } else if (state.signalPoor && state.lastReading) {
+        which = "signal"; text = "Weak signal. No alerts until it improves. Try adjusting your glasses.";
+      } else if (state.patientSource === "cache") {
+        which = "record"; kind = "info"; text = "Health record service unreachable. Using your last saved record.";
+      } else if (state.patientSource === "local") {
+        which = "record"; kind = "info"; text = "Health record unavailable. Using the built-in demo patient.";
+      }
+      const changed = b.dataset.which !== (which || "") || b.hidden !== !which;
+      b.hidden = !which;
+      b.dataset.which = which || "";
+      b.dataset.kind = kind;
+      if (which) { $("banner-ico").innerHTML = ICONS[which]; $("banner-text").textContent = text; b.setAttribute("role", kind === "bad" ? "alert" : "status"); }
+      if (changed) queueFit();
     }
+
+    function tick() {
+      renderBanner();
+      renderMeta();
+      renderHero();
+    }
+    setInterval(tick, 1000);
+
+    // ======================================================================
+    // Backend wiring (same endpoints and messages as web/index.html)
+    // ======================================================================
+    async function getJSON(path) { const res = await fetch(path); if (!res.ok) throw new Error(path + " " + res.status); return res.json(); }
 
     async function loadInitial() {
+      if (!location.host) return;
+      $("open-demo").hidden = true;
+      try {
+        const recent = await getJSON("/readings?limit=300");
+        const cutoff = Date.now() - TREND_MS;
+        state.trend = recent.filter((r) => r.hr != null && r.t >= cutoff).map((r) => ({ t: r.t, hr: r.hr })).reverse();
+      } catch (err) {}
       try { renderStatus(await getJSON("/status")); } catch (err) {}
       try { renderPatient(await getJSON("/patient")); } catch (err) { renderPatient(MOCK_PATIENT); }
-      try {
-        const readings = await getJSON("/readings?limit=1");
-        if (readings.length) {
-          renderReading(readings[0]);
-          // Replay timestamps aren't wall-clock, so don't age stored data; wait for a live one.
-          state.storedOnly = true;
-          tick();
-        }
-      } catch (err) {}
-      try {
-        const w = await getJSON("/walk");
-        if (w.phase === "walking") state.walkStartLocal = Date.now() - Math.max(0, Date.now() - (w.started_at || Date.now()));
-        if (w.phase !== "idle") renderWalk(w);
-      } catch (err) {}
-      try {
-        const snap = await getJSON("/checkin");
-        if (snap.caregiver_name) state.caregiverName = snap.caregiver_name;
-        if (snap.current && snap.current.status === "waiting") renderCheckin(snap.current);
-      } catch (err) {}
-      try {
-        const alerts = await getJSON("/alerts?limit=50");
-        state.history = alerts;
-        renderHistory();
-        if (alerts.length) renderAlert(alerts[0], false);
-      } catch (err) {}
+      try { const rs = await getJSON("/readings?limit=1"); if (rs.length) { renderReading(rs[0]); state.storedOnly = true; tick(); } } catch (err) {}
+      try { const w = await getJSON("/walk"); if (w.phase === "walking") state.walkStartLocal = w.started_at || Date.now(); if (w.phase !== "idle") renderWalk(w); } catch (err) {}
+      try { const snap = await getJSON("/checkin"); if (snap.caregiver_name) state.caregiverName = snap.caregiver_name; if (snap.current && snap.current.status === "waiting") renderCheckin(snap.current); } catch (err) {}
+      try { const alerts = await getJSON("/alerts?limit=50"); state.history = alerts; renderHistory(); if (alerts.length) renderAlert(alerts[0], false); } catch (err) {}
     }
 
-    // ---------- Live connection ----------
     function connect() {
-      if (!location.host) return showMock("Example");
+      if (!location.host) return showMock();
       let socket;
-      try {
-        const proto = location.protocol === "https:" ? "wss" : "ws";
-        socket = new WebSocket(proto + "://" + location.host + "/ws");
-      } catch (err) {
-        return scheduleReconnect();
-      }
+      try { socket = new WebSocket((location.protocol === "https:" ? "wss" : "ws") + "://" + location.host + "/ws"); }
+      catch (err) { return scheduleReconnect(); }
       state.socket = socket;
-      socket.onopen = function () {
-        state.live = true;
-        state.retryMs = 1000;
-        setLink("Live", "live");
-      };
+      socket.onopen = function () { state.live = true; state.retryMs = 1000; setLink("Live", "live"); };
       socket.onmessage = function (event) {
-        let msg;
-        try { msg = JSON.parse(event.data); } catch (err) { return; }
-        if (msg.type === "reading" && msg.data) {
-          state.storedOnly = false;
-          renderReading(msg.data);
-        }
-        if (msg.type === "alert" && msg.data) {
-          renderAlert(msg.data, true);
-          speak(msg.data, msg.audio_url);
-        }
+        let msg; try { msg = JSON.parse(event.data); } catch (err) { return; }
+        if (msg.type === "reading" && msg.data) { state.storedOnly = false; renderReading(msg.data); }
+        if (msg.type === "alert" && msg.data) { renderAlert(msg.data, true); speak(msg.data, msg.audio_url); }
         if (msg.type === "checkin" && msg.data) renderCheckin(msg.data);
         if (msg.type === "walk" && msg.data) {
           if (msg.data.phase === "walking" && (!state.walk || state.walk.phase !== "walking")) {
-            state.walkStartLocal = Date.now() - Math.max(0, Date.now() - (msg.data.started_at || Date.now()));
-            state.walkDismissed = false;
+            state.walkStartLocal = msg.data.started_at || Date.now(); state.walkDismissed = false;
           }
           renderWalk(msg.data);
         }
         if (msg.type === "coach" && msg.data) {
-          if (state.walk && state.walk.phase === "walking" && msg.data.kind !== "start") $("walk-tip").textContent = msg.data.text;
+          if (state.walk && state.walk.phase === "walking" && msg.data.kind !== "start") { $("walk-tip").textContent = msg.data.text; queueFit(); }
           speakLine(msg.data.text, msg.audio_url);
         }
-        if (msg.type === "status" && msg.data) {
-          renderStatus(msg.data);
-          getJSON("/patient").then(renderPatient).catch(() => {});
-        }
+        if (msg.type === "status" && msg.data) { renderStatus(msg.data); getJSON("/patient").then(renderPatient).catch(() => {}); }
       };
-      socket.onclose = function () {
-        if (state.socket !== socket) return;
-        state.live = false;
-        scheduleReconnect();
-      };
-      socket.onerror = function () {
-        try { socket.close(); } catch (err) {}
-      };
+      socket.onclose = function () { if (state.socket !== socket) return; state.live = false; scheduleReconnect(); };
+      socket.onerror = function () { try { socket.close(); } catch (err) {} };
     }
-
     function scheduleReconnect() {
       setLink("Reconnecting", "warn");
       setTimeout(connect, state.retryMs);
       state.retryMs = Math.min(state.retryMs * 2, 5000);
     }
 
-    function showMock(message) {
-      state.mock = true;
-      setLink(message, "warn");
-      renderStatus({
-        patient_source: "mock",
-        record_effects: [
-          "High risk: alerts if your resting heart rate stays 8+ bpm above your usual for 30 seconds.",
-          "On metoprolol: recovery after activity is compared with people on similar medication."
-        ]
-      });
-      renderPatient(MOCK_PATIENT);
-      renderReading(MOCK_READING);
-    }
-
-    // ---------- Offline detection ----------
-    function tick() {
-      const banner = $("offline-banner");
-      if (state.mock || state.storedOnly || state.lastReadingAt == null) {
-        banner.hidden = true;
-        $("updated").textContent = state.mock
-          ? "example data"
-          : state.storedOnly ? "last saved reading" : "waiting for the glasses";
-        renderHero();
-        refitIfBannersChanged();
-        return;
-      }
-      const age = Date.now() - state.lastReadingAt;
-      const secs = Math.max(0, Math.round(age / 1000));
-      $("updated").textContent = secs < 2 ? "updated just now" : "updated " + secs + " s ago";
-      const stale = age > OFFLINE_AFTER_MS;
-      banner.hidden = !(stale || state.sensorOffline);
-      $("offline-text").textContent = stale ? "Glasses not sending: no data for " + secs + " s" : "Glasses not connected";
-      renderHero();
-      refitIfBannersChanged();
-    }
-    let bannerKey = "";
-    function refitIfBannersChanged() {
-      const key = ["offline-banner", "quality-banner", "patient-banner"].map((id) => ($(id).hidden ? 0 : 1)).join("");
-      if (key !== bannerKey) { bannerKey = key; queueFit(); }
-    }
-    setInterval(tick, 1000);
-
-    // ---------- Test alert ----------
+    // ---------- Test / Recover (now inside All alerts) ----------
     function testAlert() {
-      const recovering = state.currentLevel === "notify" || state.currentLevel === "escalate";
-      const reading = recovering
-        ? { t: Date.now(), hr: 70, ibi_ms: [860, 850, 870], activity: "resting", quality: 0.9, baseline_hr: 68, deviation: 0.3, persist_s: 0,
-            recovery_tau_s: 45, hr_drop_60s: 30, recovery_ratio: null, recovery_percentile: null,
-            recovery_verdict: "normal", signal_status: "ok" }
-        : { t: Date.now(), hr: 104, ibi_ms: [580, 570, 590], activity: "resting", quality: 0.86, baseline_hr: 68, deviation: 2.6, persist_s: 48,
-            ...NO_RECOVERY, signal_status: "ok" };
-      return recovering
-        ? {
-            t: Date.now(), level: "normal", confidence: 0.9,
-            headline: "Back within your usual range",
-            reason: "Heart rate has returned close to your resting baseline. (Test alert)",
-            voice_text: "Your heart rate is back within your usual range. I'll keep monitoring.",
-            next_step: "No action needed", reading: reading
-          }
-        : {
-            t: Date.now(), level: "notify", confidence: 0.8,
-            headline: "Elevated heart rate at rest",
-            reason: "Heart rate has stayed well above your usual resting rate while you're sitting still. (Test alert)",
-            voice_text: "Your heart rate has stayed high while you're resting. Please sit down and check your phone.",
-            next_step: "Sit down and review", reading: reading
-          };
+      const recovering = urgent();
+      const a = recovering ? ALERTS.normal() : ALERTS.notify();
+      a.reason += " (Test alert)";
+      return a;
     }
-
     $("simulate").addEventListener("click", async function () {
       const alert = testAlert();
-      if (!state.live) {
-        renderReading(alert.reading);
-        renderAlert(alert, true);
-        speak(alert, null);
-        if (alert.level === "notify" || alert.level === "escalate") localCheckin(alert.level);
-        return;
-      }
+      closeSheet($("history-sheet"));
+      if (!state.live) return demo.alert(alert);
       try {
-        const res = await fetch("/alerts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(alert)
-        });
+        const res = await fetch("/alerts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(alert) });
         if (!res.ok) throw new Error(String(res.status));
-      } catch (err) {
-        setLink("Test failed", "warn");
-      }
+      } catch (err) { setLink("Test failed", "warn"); }
     });
 
+    // ======================================================================
+    // Mock mode: a gently varying feed so the page feels live when opened as a file.
+    // ======================================================================
+    function showMock() {
+      state.mock = true;
+      setLink("Example", "warn");
+      renderStatus(MOCK_STATUS);
+      renderPatient(MOCK_PATIENT);
+      demo.quiet();
+    }
+    const mock = { target: 72, extra: {} };
+    setInterval(function () {
+      if (!state.mock || state.feedPaused) return;
+      // Glide toward the target so changes look like a real heart rate, not a jump.
+      const last = state.lastReading && state.lastReading.hr != null ? state.lastReading.hr : mock.target;
+      const next = Math.abs(mock.target - last) > 3 ? last + (mock.target - last) * 0.3 : mock.target + (Math.random() - 0.5) * 3;
+      renderReading(reading(Math.round(next), mock.extra));
+    }, 2000);
+
+    // ======================================================================
+    // Demo controller (prototype only). Everything goes through the render functions.
+    // ======================================================================
+    // Seed the trend with a believable recent history ending near the current value.
+    function seedTrend(fn) {
+      const now = Date.now();
+      state.trend = [];
+      for (let s = 600; s > 0; s -= 6) state.trend.push({ t: now - s * 1000, hr: fn(s / 60) + (Math.random() - 0.5) * 3 });
+      queueFit();
+    }
+    const ramp = (from, to, startMin, endMin) => (m) => m >= startMin ? from : m <= endMin ? to : from + (to - from) * (startMin - m) / (startMin - endMin);
+    const TRENDS = {
+      normal: (m) => m > 6 ? 104 : m > 2 ? 104 - (6 - m) * 8 : 72,
+      monitor: ramp(70, 84, 4, 1),
+      notify: ramp(71, 104, 4.5, 1.5),
+      escalate: ramp(76, 128, 9, 4)
+    };
+    function past(minsAgo, a) { a.t = Date.now() - minsAgo * 60000; return a; }
+    const demo = {
+      reset() {
+        state.feedPaused = false; state.sensorOffline = false; state.signalPoor = false;
+        mock.extra = {}; state.currentLevel = null; state.lastAlert = null;
+        if (state.checkin && state.checkin.status === "waiting") renderCheckin(Object.assign({}, state.checkin, { status: "resolved" }));
+        state.walk = null; state.walkDismissed = false; renderWalk(null);
+      },
+      quiet() {
+        demo.reset(); state.history = []; mock.target = 72;
+        $("update").dataset.level = ""; $("headline").textContent = "Nothing to report";
+        $("reason").textContent = "If anything changes, you'll see what happened here, in plain words.";
+        $("u-time").textContent = ""; $("why-what-sec").hidden = true;
+        $("simulate-label").textContent = "Send a test alert";
+        seedTrend(() => 71);
+        renderReading(reading(72)); renderHistory(); renderHero(); renderFeed();
+      },
+      alert(a) {
+        mock.target = Math.round(a.reading.hr); mock.extra = { persist_s: a.reading.persist_s, quality: a.reading.quality };
+        renderReading(Object.assign({}, a.reading, { t: Date.now() }));
+        renderAlert(a, true);
+        speak(a, null);
+        if (a.level === "notify" || a.level === "escalate") localCheckin(a.level);
+        else if (state.checkin && state.checkin.status === "waiting") renderCheckin(Object.assign({}, state.checkin, { status: "resolved" }));
+      },
+      level(l, withCheckin) {
+        const a = ALERTS[l]();
+        seedTrend(TRENDS[l]);
+        mock.target = Math.round(a.reading.hr); mock.extra = { persist_s: a.reading.persist_s, quality: a.reading.quality };
+        renderReading(Object.assign({}, a.reading, { t: Date.now() }));
+        renderAlert(a, true);
+        speak(a, null);
+        if (withCheckin) localCheckin(l);
+      },
+      several() {
+        state.history = [
+          past(4, ALERTS.normal()), past(9, ALERTS.notify()), past(14, ALERTS.monitor()), past(95, ALERTS.normal()),
+          past(110, ALERTS.escalate()), past(118, ALERTS.notify()), past(130, ALERTS.monitor()), past(400, ALERTS.normal())
+        ];
+        const a = state.history[0];
+        renderAlert(a, false); mock.target = 71; mock.extra = {};
+      },
+      walkStart(where) {
+        state.walkDismissed = false; state.walkStartLocal = Date.now() - 3 * 60000 - 12000;
+        seedTrend(ramp(70, where === "above" ? 106 : 93, 3.2, 1.5));
+        mock.target = where === "above" ? 106 : 93; mock.extra = { activity: "moving" };
+        renderReading(reading(mock.target, mock.extra));
+        renderWalk({ phase: "walking", local: true, started_at: state.walkStartLocal, zone_low: 88, zone_high: 98,
+          zone_note: "your usual 68 + 20 to 30, because of metoprolol",
+          last_tip: where === "above" ? "You're at 106, above your zone of 98. Slow down a little." : null });
+        speakLine(where === "above" ? "You're at 106, above your zone of 98. Slow down a little." : "Walk started. Try to keep your heart rate between 88 and 98.");
+      },
+      walkStop() {
+        const w = state.walk || { zone_low: 88, zone_high: 98 };
+        mock.target = 74; mock.extra = { activity: "resting" };
+        const hrStop = state.lastReading && state.lastReading.hr ? state.lastReading.hr : 95;
+        renderReading(reading(Math.round(hrStop), mock.extra));
+        const now = Date.now();
+        renderWalk(Object.assign({}, w, { phase: "recovering", local: true, ended_at: now, recovery_due: now + 15000,
+          recovery_remaining_s: 15, minutes: Math.max(1, Math.round((now - (state.walkStartLocal || now)) / 6000) / 10), hr_at_stop: hrStop, last_tip: null }));
+      },
+      walkDone(ok) {
+        const w = state.walk || { zone_low: 88, zone_high: 98, minutes: 12.4 };
+        mock.target = ok ? 71 : 88;
+        renderWalk(Object.assign({}, w, { phase: "done", minutes: w.minutes || 12.4, drop_1min: ok ? 24 : 9, recovery_ok: ok }));
+        speakLine(ok ? "Your heart rate dropped 24 beats in the first minute. That's a healthy recovery. Nice walk." : "Your heart rate dropped 9 beats in the first minute, which is slower than expected.");
+      }
+    };
+    function finishLocalWalk() { demo.walkDone(true); }
+
+    function ensureCheckin() { if (!state.checkin || state.checkin.status !== "waiting") demo.level("notify", true); }
+    const DEMO = [
+      ["Status level", [
+        ["Quiet (no alerts)", () => demo.quiet()],
+        ["Normal (recovered)", () => demo.level("normal")],
+        ["Monitor", () => demo.level("monitor")],
+        ["Notify, long reason", () => demo.level("notify")],
+        ["Escalate", () => demo.level("escalate")],
+        ["Several alerts", () => demo.several()]
+      ]],
+      ["Are you OK? check-in", [
+        ["Start (waiting)", () => { demo.level("notify", true); }],
+        ["Answer: I'm OK", () => { ensureCheckin(); answerCheckin("ok"); }],
+        ["Answer: I need help", () => { ensureCheckin(); answerCheckin("help"); }],
+        ["No response", () => { if (state.checkin && state.checkin.status === "waiting") renderCheckin(Object.assign({}, state.checkin, { status: "no_response" })); else { localCheckin("notify"); renderCheckin(Object.assign({}, state.checkin, { status: "no_response" })); } }],
+        ["Last 5 seconds", () => { if (!state.checkin || state.checkin.status !== "waiting") localCheckin("notify"); state.checkinDeadline = Date.now() + 5000; }]
+      ]],
+      ["Banners", [
+        ["Weak signal", () => { mock.extra = Object.assign({}, mock.extra, { quality: 0.38, signal_status: "poor" }); renderReading(reading(mock.target, mock.extra)); }],
+        ["Glasses offline", () => { state.feedPaused = true; state.lastReadingAt = Date.now() - 14000; tick(); }],
+        ["Record from cache", () => renderStatus(Object.assign({}, MOCK_STATUS, { patient_source: "cache" }))],
+        ["Clear banners", () => { state.feedPaused = false; mock.extra = {}; renderStatus(MOCK_STATUS); renderReading(reading(mock.target)); }]
+      ]],
+      ["Guided walk", [
+        ["Start: in zone", () => demo.walkStart("in")],
+        ["Above zone", () => demo.walkStart("above")],
+        ["End walk → recovering (15 s)", () => { if (!state.walk || state.walk.phase !== "walking") demo.walkStart("in"); demo.walkStop(); }],
+        ["Done: healthy", () => demo.walkDone(true)],
+        ["Done: slower", () => demo.walkDone(false)]
+      ]],
+      ["Sound", [
+        ["Off", () => { state.soundOn = false; state.missed = false; renderSound(); }],
+        ["On", () => { state.soundOn = true; state.missed = false; renderSound(); }],
+        ["Missed alert", () => { state.soundOn = false; state.missed = true; renderSound(); }]
+      ]],
+      ["Sheets", [
+        ["Why?", () => openSheet("why-sheet")],
+        ["Health record", () => openSheet("record-sheet")],
+        ["All alerts", () => { renderAllAlerts(state.history); openSheet("history-sheet"); }]
+      ]],
+      ["Connection", [
+        ["Live", () => setLink("Live", "live")],
+        ["Reconnecting", () => setLink("Reconnecting", "warn")],
+        ["Example", () => setLink("Example", "warn")]
+      ]]
+    ];
+    (function buildDemo() {
+      const body = $("demo-body");
+      for (const [title, items] of DEMO) {
+        const g = document.createElement("div"); g.className = "demo-group";
+        const h = document.createElement("p"); h.className = "eyebrow"; h.textContent = title;
+        const grid = document.createElement("div"); grid.className = "demo-grid";
+        for (const [label, fn] of items) {
+          const b = document.createElement("button"); b.type = "button"; b.textContent = label;
+          b.addEventListener("click", function () {
+            const keep = title === "Sheets";
+            closeSheet($("demo-sheet"));
+            setTimeout(fn, keep ? 60 : 0);
+          });
+          grid.append(b);
+        }
+        g.append(h, grid); body.append(g);
+      }
+      const note = document.createElement("p"); note.className = "demo-note";
+      note.textContent = "The Demo button exists only in this prototype. Recovery is shortened to 15 s here (60 s on the real backend).";
+      body.append(note);
+    })();
+    $("open-demo").addEventListener("click", () => openSheet("demo-sheet"));
+    window.demo = demo;
+
+    renderSound();
     renderHistory();
     loadInitial().then(connect);
   </script>
