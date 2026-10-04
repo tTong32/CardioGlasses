@@ -223,7 +223,7 @@
     .panel.is-paused .hr { opacity: 0.35; }
     .panel.is-paused .beat { animation: none; opacity: 0.4; }
 
-    /* Rail: where "now" sits against "your usual" (or the walk zone). */
+    /* Rail: where "now" sits against "your usual" (or the exercise zone). */
     .rail { display: grid; gap: 6px; }
     .rail-track { position: relative; height: 10px; border-radius: 5px; background: color-mix(in srgb, var(--pink) 13%, transparent); }
     .rail-band { position: absolute; top: 0; bottom: 0; border-radius: 5px; background: color-mix(in srgb, var(--normal-tone) 55%, transparent); }
@@ -238,7 +238,7 @@
     .rail-labels b { font-weight: 800; }
 
     /* =========================================================
-       Feed: latest update (or the walk coach) + earlier alerts
+       Feed: latest update (or the activity card) + earlier alerts
        ========================================================= */
     .feed { grid-area: feed; min-height: 0; display: flex; flex-direction: column; gap: var(--gap); }
     .feed > * { flex-shrink: 0; }
@@ -302,7 +302,13 @@
       background: var(--ink); color: var(--bg); font-size: 0.85rem; font-weight: 700; white-space: nowrap; pointer-events: none;
     }
 
-    /* Walk coach card */
+    /* Activity: a quiet "just moving" card, or the exercise coach */
+    .quietcard { display: grid; gap: 8px; }
+    .q-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .q-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.05rem, 4.6vw, 1.25rem); line-height: 1.15; }
+    .q-clock { font-family: var(--font-display); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+    .q-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+    .q-actions .btn { min-height: 44px; padding: 8px 12px; font-size: 0.92rem; }
     .walkcard { display: grid; gap: 10px; }
     .w-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
     .w-title { font-family: var(--font-display); font-weight: 700; font-size: clamp(1.12rem, 2.6dvh, 1.3rem); }
@@ -355,6 +361,8 @@
     body.compact .dock-btn svg { width: 20px; height: 20px; }
     body.compact .badge { top: 3px; }
     body.compact .card { padding-block: 10px; }
+    body.compact .quietcard { gap: 6px; }
+    body.compact .q-actions .btn { min-height: 40px; font-size: 0.88rem; padding-inline: 8px; }
     body.compact .more { min-height: 34px; margin-top: 4px; }
     body.compact2 .panel[data-act="1"] .todo .todo-label { display: none; }
     body.compact2 .hr { font-size: clamp(3rem, 10dvh, 4rem); }
@@ -539,7 +547,7 @@
       <p class="sr" id="updated-sr"></p>
     </section>
 
-    <!-- Feed: the latest update (or walk coach), then earlier alerts if there's room -->
+    <!-- Feed: the latest update (or the activity), then earlier alerts if there's room -->
     <section class="feed" id="feed">
       <article class="card update" id="update" data-level="" aria-live="polite">
         <div class="u-top"><span class="eyebrow" id="u-eyebrow">Latest update</span><span class="u-time" id="u-time"></span></div>
@@ -550,8 +558,16 @@
         </button>
       </article>
 
+      <article class="card quietcard" id="quietcard" hidden aria-live="polite">
+        <div class="q-top"><h2 class="q-title" id="quiet-text">You're moving around</h2><span class="q-clock" id="quiet-clock">0:00</span></div>
+        <div class="q-actions">
+          <button type="button" class="btn solid" id="quiet-exercise">Make it exercise</button>
+          <button type="button" class="btn" id="quiet-stop">Stop</button>
+        </div>
+      </article>
+
       <article class="card walkcard" id="walkcard" hidden aria-live="polite">
-        <div class="w-top"><h2 class="w-title" id="walk-title">Guided walk</h2><span class="w-clock" id="walk-clock">0:00</span></div>
+        <div class="w-top"><h2 class="w-title" id="walk-title">Exercise</h2><span class="w-clock" id="walk-clock">0:00</span></div>
         <div class="w-recover" id="walk-recover" hidden>
           <div class="w-ring"><svg viewBox="0 0 74 74" aria-hidden="true"><circle class="trk" cx="37" cy="37" r="31"/><circle class="bar" id="walk-ring" cx="37" cy="37" r="31" stroke-dasharray="194.8" stroke-dashoffset="0"/></svg><b id="walk-left">60</b></div>
           <p id="walk-recover-text">Stand or sit still. We're checking how fast your heart settles.</p>
@@ -581,7 +597,7 @@
     <nav class="dock" aria-label="More">
       <button type="button" class="dock-btn" id="walk-btn">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="13" cy="4.5" r="1.8"/><path d="M10 21l2-6 3 3v3"/><path d="M8 11l3-3 3 2 2 3"/><path d="M12 15l-1-4"/></svg>
-        <span id="walk-label">Walk</span>
+        <span id="walk-label">Activity</span>
       </button>
       <button type="button" class="dock-btn" id="open-history">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
@@ -777,6 +793,11 @@
       const w = state.walk;
       return !!w && (w.phase === "walking" || w.phase === "recovering" || (w.phase === "done" && !state.walkDismissed));
     }
+    // phase "walking" means an activity is underway. Quiet is "just moving"; anything else is exercise.
+    function isQuiet(w) {
+      w = w || state.walk;
+      return !!(w && w.phase === "walking" && w.mode === "quiet");
+    }
     function walkWhere() {
       const w = state.walk, r = state.lastReading;
       if (!w || w.zone_low == null || !r || r.hr == null) return null;
@@ -794,19 +815,19 @@
       let level = state.currentLevel || "";
       let title, step, act = false;
       const w = state.walk;
-      if (walkActive() && !urgent()) {
-        // Walk mode takes over the panel unless an alert needs attention.
+      if (walkActive() && !isQuiet() && !urgent()) {
+        // Exercise takes over the panel unless an alert needs attention. Quiet movement leaves it alone.
         if (w.phase === "walking") {
           const where = walkWhere();
-          title = where === "above" ? "Above your zone" : where === "below" ? "Below your zone" : where === "in" ? "In your zone" : "Walking";
-          step = where === "above" ? "Slow down a little" : where === "below" ? "Walk at a pace that feels comfortable" : "Keep this pace";
+          title = where === "above" ? "Above your zone" : where === "below" ? "Below your zone" : where === "in" ? "In your zone" : "Exercising";
+          step = where === "above" ? "Slow down a little" : where === "below" ? "Keep a comfortable pace" : "Keep this pace";
           level = where === "above" ? "notify" : where === "in" ? "normal" : "";
           act = where === "above";
         } else if (w.phase === "recovering") {
           title = "Stand or sit still"; step = "Checking how your heart settles"; level = ""; act = true;
         } else {
-          title = w.recovery_ok == null ? "Walk finished" : w.recovery_ok ? "Healthy recovery" : "Slower recovery";
-          step = w.recovery_ok === false ? "Take it easy today" : "Nice walk";
+          title = w.recovery_ok == null ? "Exercise finished" : w.recovery_ok ? "Healthy recovery" : "Slower recovery";
+          step = w.recovery_ok === false ? "Take it easy today" : "Nice work";
           level = w.recovery_ok === false ? "monitor" : "normal";
         }
       } else if (state.currentLevel) {
@@ -826,12 +847,12 @@
       renderRail();
     }
 
-    // Rail: usual vs now; in a walk, the zone vs now.
+    // Rail: usual vs now; in an exercise, the zone vs now.
     function renderRail() {
       const r = state.lastReading;
       const hr = r && r.hr != null ? Math.round(r.hr) : null;
       const w = state.walk;
-      const inWalk = walkActive() && w && w.zone_low != null && w.phase === "walking" && !urgent();
+      const inWalk = walkActive() && !isQuiet() && w && w.zone_low != null && w.phase === "walking" && !urgent();
       const usual = r && r.baseline_hr != null ? Math.round(r.baseline_hr) : null;
       let lo, hi;
       if (inWalk) { lo = w.zone_low - 30; hi = w.zone_high + 30; }
@@ -1029,16 +1050,19 @@
       }
     }
 
-    // Feed: update card normally; the walk coach while walking (unless an alert needs attention).
+    // Feed: update card normally; the quiet card or the exercise coach while an activity runs
+    // (unless an alert needs attention).
     function renderFeed() {
-      const showWalk = walkActive() && !urgent();
-      $("walkcard").hidden = !showWalk;
-      $("update").hidden = showWalk;
+      const showQuiet = isQuiet() && !urgent();
+      const showExercise = walkActive() && !isQuiet() && !urgent();
+      $("quietcard").hidden = !showQuiet;
+      $("walkcard").hidden = !showExercise;
+      $("update").hidden = showQuiet || showExercise;
       queueFit();
     }
 
     // ======================================================================
-    // Guided walk
+    // Activity: quiet movement, or a coached exercise
     // ======================================================================
     const fmtClock = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
     const WRING = 194.8;
@@ -1048,8 +1072,8 @@
       const phase = w ? w.phase : "idle";
       btn.classList.toggle("on", phase === "walking");
       btn.disabled = phase === "recovering";
-      $("walk-label").textContent = phase === "walking" ? "End walk" : phase === "recovering" ? "Checking…" : "Walk";
-      if (walkActive()) {
+      $("walk-label").textContent = phase === "walking" ? "Stop" : phase === "recovering" ? "Checking…" : "Activity";
+      if (!isQuiet() && walkActive()) {
         $("walk-recover").hidden = phase !== "recovering";
         $("walk-drop").hidden = !(phase === "done" && w.drop_1min != null);
         $("walk-done").hidden = phase !== "done";
@@ -1057,14 +1081,14 @@
         $("walk-zone-note").hidden = phase !== "walking" || !w.zone_note;
         $("walk-zone-note").textContent = w.zone_note ? "Zone " + w.zone_low + "–" + w.zone_high + ": " + w.zone_note + "." : "";
         if (phase === "walking") {
-          $("walk-title").textContent = "Guided walk";
+          $("walk-title").textContent = "Exercise";
           $("walk-tip").textContent = w.last_tip || "I'll only speak up if you go above your zone.";
         } else if (phase === "recovering") {
           $("walk-title").textContent = "Recovery check";
           state.recoveryDue = Date.now() + (w.recovery_remaining_s || 0) * 1000;
           state.recoveryTotal = Math.max(1, w.recovery_due && w.ended_at ? (w.recovery_due - w.ended_at) / 1000 : (w.recovery_remaining_s || 60));
         } else {
-          $("walk-title").textContent = "Your walk";
+          $("walk-title").textContent = "Your exercise";
           $("walk-clock").textContent = w.minutes != null ? w.minutes + " min" : "";
           if (w.drop_1min != null) {
             $("walk-drop-n").textContent = Math.max(0, Math.round(w.drop_1min));
@@ -1082,7 +1106,9 @@
       const w = state.walk;
       if (!w || !walkActive()) return;
       if (w.phase === "walking") {
-        $("walk-clock").textContent = fmtClock(Date.now() - (state.walkStartLocal || Date.now()));
+        const clock = fmtClock(Date.now() - (state.walkStartLocal || Date.now()));
+        if (isQuiet()) { $("quiet-clock").textContent = clock; return; }
+        $("walk-clock").textContent = clock;
         renderHero();
       } else if (w.phase === "recovering") {
         const left = Math.max(0, Math.ceil((state.recoveryDue - Date.now()) / 1000));
@@ -1091,25 +1117,33 @@
         $("walk-ring").setAttribute("stroke-dashoffset", String(WRING * (1 - left / state.recoveryTotal)));
         const hr = state.lastReading && state.lastReading.hr;
         $("walk-recover-text").textContent = "Stand or sit still. " + (w.hr_at_stop != null && hr != null
-          ? "From " + Math.round(w.hr_at_stop) + " at the end of your walk to " + Math.round(hr) + " now."
+          ? "From " + Math.round(w.hr_at_stop) + " at the end of your exercise to " + Math.round(hr) + " now."
           : "We're checking how fast your heart settles.");
         if (left <= 0 && w.local) finishLocalWalk();
       }
     }
     setInterval(updateWalkLive, 500);
 
-    $("walk-btn").addEventListener("click", async function () {
-      const w = state.walk;
-      const starting = !w || w.phase !== "walking";
-      if (!state.live) return starting ? demo.walkStart() : demo.walkStop();
+    async function postActivity(path) {
       try {
-        const res = await fetch(starting ? "/walk/start" : "/walk/stop", { method: "POST" });
-        if (res.ok) {
-          state.walkDismissed = false;
-          if (starting) state.walkStartLocal = Date.now();
-          renderWalk(await res.json());
-        }
+        const res = await fetch(path, { method: "POST" });
+        if (res.ok) renderWalk(await res.json());
       } catch (err) {}
+    }
+    $("walk-btn").addEventListener("click", function () {
+      const w = state.walk;
+      const active = w && w.phase === "walking";
+      if (!state.live) return active ? demo.walkStop() : demo.walkStart("in");
+      if (!active) { state.walkDismissed = false; state.walkStartLocal = Date.now(); }
+      postActivity(active ? "/activity/stop" : "/activity/start");
+    });
+    $("quiet-stop").addEventListener("click", function () {
+      if (!state.live) return demo.walkStop();
+      postActivity("/activity/stop");
+    });
+    $("quiet-exercise").addEventListener("click", function () {
+      if (!state.live) return demo.makeExercise();
+      postActivity("/activity/exercise");
     });
     $("walk-done").addEventListener("click", function () { state.walkDismissed = true; renderWalk(state.walk); });
 
@@ -1424,7 +1458,12 @@
       try { renderStatus(await getJSON("/status")); } catch (err) {}
       try { renderPatient(await getJSON("/patient")); } catch (err) { renderPatient(MOCK_PATIENT); }
       try { const rs = await getJSON("/readings?limit=1"); if (rs.length) { renderReading(rs[0]); state.storedOnly = true; tick(); } } catch (err) {}
-      try { const w = await getJSON("/walk"); if (w.phase === "walking") state.walkStartLocal = w.started_at || Date.now(); if (w.phase !== "idle") renderWalk(w); } catch (err) {}
+      try {
+        let w;
+        try { w = await getJSON("/activity"); } catch (err) { w = await getJSON("/walk"); }
+        if (w.phase === "walking") state.walkStartLocal = w.started_at || Date.now();
+        if (w.phase !== "idle") renderWalk(w);
+      } catch (err) {}
       try { const snap = await getJSON("/checkin"); if (snap.caregiver_name) state.caregiverName = snap.caregiver_name; if (snap.current && snap.current.status === "waiting") renderCheckin(snap.current); } catch (err) {}
       try { const alerts = await getJSON("/alerts?limit=50"); state.history = alerts; renderHistory(); if (alerts.length) renderAlert(alerts[0], false); } catch (err) {}
     }
@@ -1441,13 +1480,13 @@
         if (msg.type === "reading" && msg.data) { state.storedOnly = false; renderReading(msg.data); }
         if (msg.type === "alert" && msg.data) { renderAlert(msg.data, true); if (msg.speak !== false) speak(msg.data, msg.audio_url); }
         if (msg.type === "checkin" && msg.data) renderCheckin(msg.data);
-        if (msg.type === "walk" && msg.data) {
+        if ((msg.type === "activity" || msg.type === "walk") && msg.data) {
           if (msg.data.phase === "walking" && (!state.walk || state.walk.phase !== "walking")) {
             state.walkStartLocal = msg.data.started_at || Date.now(); state.walkDismissed = false;
           }
           renderWalk(msg.data);
         }
-        if (msg.type === "coach" && msg.data) {
+        if (msg.type === "coach" && msg.data && !(state.walk && state.walk.mode === "quiet")) {
           if (state.walk && state.walk.phase === "walking" && msg.data.kind !== "start") { $("walk-tip").textContent = msg.data.text; queueFit(); }
           speakLine(msg.data.text, msg.audio_url);
         }
@@ -1557,30 +1596,53 @@
         const a = state.history[0];
         renderAlert(a, false); mock.target = 71; mock.extra = {};
       },
+      quietMove() {
+        demo.quiet();
+        state.walkDismissed = false;
+        state.walkStartLocal = Date.now() - 45000;
+        mock.target = 86; mock.extra = { activity: "moving" };
+        renderReading(reading(86, mock.extra));
+        renderWalk({ phase: "walking", mode: "quiet", source: "auto", started_at: state.walkStartLocal,
+          zone_low: null, zone_high: null, zone_note: "", last_tip: null });
+      },
+      makeExercise() {
+        if (!state.walk || state.walk.mode !== "quiet") demo.quietMove();
+        renderWalk(Object.assign({}, state.walk, {
+          mode: "exercise", source: state.walk.source || "auto",
+          zone_low: 88, zone_high: 98, zone_note: "usual 68 + 20 to 30, because of metoprolol", last_tip: null
+        }));
+        speakLine("Exercise started. Try to keep your heart rate between 88 and 98. I'll tell you if you go above it.");
+      },
       walkStart(where) {
         state.walkDismissed = false; state.walkStartLocal = Date.now() - 3 * 60000 - 12000;
         seedTrend(ramp(70, where === "above" ? 106 : 93, 3.2, 1.5));
         mock.target = where === "above" ? 106 : 93; mock.extra = { activity: "moving" };
         renderReading(reading(mock.target, mock.extra));
-        renderWalk({ phase: "walking", local: true, started_at: state.walkStartLocal, zone_low: 88, zone_high: 98,
-          zone_note: "your usual 68 + 20 to 30, because of metoprolol",
+        renderWalk({ phase: "walking", mode: "exercise", source: "manual", local: true, started_at: state.walkStartLocal, zone_low: 88, zone_high: 98,
+          zone_note: "usual 68 + 20 to 30, because of metoprolol",
           last_tip: where === "above" ? "You're at 106, above your zone of 98. Slow down a little." : null });
-        speakLine(where === "above" ? "You're at 106, above your zone of 98. Slow down a little." : "Walk started. Try to keep your heart rate between 88 and 98.");
+        speakLine(where === "above" ? "You're at 106, above your zone of 98. Slow down a little." : "Exercise started. Try to keep your heart rate between 88 and 98. I'll tell you if you go above it.");
       },
       walkStop() {
-        const w = state.walk || { zone_low: 88, zone_high: 98 };
+        const w = state.walk;
+        if (w && w.mode === "quiet") {
+          mock.extra = { activity: "resting" };
+          renderWalk({ phase: "idle", mode: null, source: null });
+          return;
+        }
+        const base = w || { zone_low: 88, zone_high: 98, mode: "exercise" };
         mock.target = 74; mock.extra = { activity: "resting" };
         const hrStop = state.lastReading && state.lastReading.hr ? state.lastReading.hr : 95;
         renderReading(reading(Math.round(hrStop), mock.extra));
         const now = Date.now();
-        renderWalk(Object.assign({}, w, { phase: "recovering", local: true, ended_at: now, recovery_due: now + 15000,
+        renderWalk(Object.assign({}, base, { phase: "recovering", mode: "exercise", local: true, ended_at: now, recovery_due: now + 15000,
           recovery_remaining_s: 15, minutes: Math.max(1, Math.round((now - (state.walkStartLocal || now)) / 6000) / 10), hr_at_stop: hrStop, last_tip: null }));
       },
       walkDone(ok) {
-        const w = state.walk || { zone_low: 88, zone_high: 98, minutes: 12.4 };
+        const w = state.walk || { zone_low: 88, zone_high: 98, minutes: 12.4, mode: "exercise" };
         mock.target = ok ? 71 : 88;
-        renderWalk(Object.assign({}, w, { phase: "done", minutes: w.minutes || 12.4, drop_1min: ok ? 24 : 9, recovery_ok: ok }));
-        speakLine(ok ? "Your heart rate dropped 24 beats in the first minute. That's a healthy recovery. Nice walk." : "Your heart rate dropped 9 beats in the first minute, which is slower than expected.");
+        renderWalk(Object.assign({}, w, { phase: "done", mode: "exercise", minutes: w.minutes || 12.4, drop_1min: ok ? 24 : 9, recovery_ok: ok }));
+        speakLine(ok ? "Your heart rate dropped 24 beats in the first minute. That's a healthy recovery. Nice work." : "Your heart rate dropped 9 beats in the first minute, which is slower than expected.");
       }
     };
     function finishLocalWalk() { demo.walkDone(true); }
@@ -1608,10 +1670,12 @@
         ["Record from cache", () => renderStatus(Object.assign({}, MOCK_STATUS, { patient_source: "cache" }))],
         ["Clear banners", () => { state.feedPaused = false; mock.extra = {}; renderStatus(MOCK_STATUS); renderReading(reading(mock.target)); }]
       ]],
-      ["Guided walk", [
-        ["Start: in zone", () => demo.walkStart("in")],
+      ["Activity", [
+        ["Just moving around", () => demo.quietMove()],
+        ["Make it exercise", () => demo.makeExercise()],
+        ["Exercise: in zone", () => demo.walkStart("in")],
         ["Above zone", () => demo.walkStart("above")],
-        ["End walk → recovering (15 s)", () => { if (!state.walk || state.walk.phase !== "walking") demo.walkStart("in"); demo.walkStop(); }],
+        ["Stop exercise → recovering (15 s)", () => { if (!state.walk || state.walk.mode === "quiet" || state.walk.phase !== "walking") demo.walkStart("in"); demo.walkStop(); }],
         ["Done: healthy", () => demo.walkDone(true)],
         ["Done: slower", () => demo.walkDone(false)]
       ]],

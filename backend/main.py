@@ -175,7 +175,7 @@ safety = caregiver.SafetyNet(hub.broadcast, patient_display_name)
 
 
 async def speak_coach(text: str, kind: str) -> None:
-    """Voice a walk-coaching line on the phone (ElevenLabs, else the phone's own voice)."""
+    """Voice an exercise-coaching line on the phone (ElevenLabs, else the phone's own voice)."""
     try:
         name, source = await asyncio.wait_for(asyncio.to_thread(voice.audio_for, text, "coach"), timeout=VOICE_TIMEOUT_S)
     except Exception as exc:
@@ -244,18 +244,28 @@ async def post_reading(reading: Reading) -> Reading:
     return reading
 
 
+@app.get("/activity")
 @app.get("/walk")
-def get_walk() -> dict:
+def get_activity() -> dict:
     return coach.state.public()
 
 
+@app.post("/activity/start")
 @app.post("/walk/start")
-async def start_walk() -> dict:
+async def start_activity() -> dict:
+    """Manual start: a coached exercise. /walk/start is the same call."""
     return (await coach.start()).public()
 
 
+@app.post("/activity/exercise")
+async def exercise_activity() -> dict:
+    """Turn a quiet activity into a coached exercise without restarting it."""
+    return (await coach.to_exercise()).public()
+
+
+@app.post("/activity/stop")
 @app.post("/walk/stop")
-async def stop_walk() -> dict:
+async def stop_activity() -> dict:
     return (await coach.stop()).public()
 
 

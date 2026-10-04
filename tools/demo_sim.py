@@ -6,6 +6,8 @@ fallback if the glasses or AI fail on the day. Alerts follow the planned rules
 
     python -m tools.demo_sim                       # elevated-at-rest story, real time
     python -m tools.demo_sim --scenario poor-signal --speed 3
+    python -m tools.demo_sim --scenario auto       # moving + rising HR, quiet activity, no voice
+    python -m tools.demo_sim --scenario exercise   # tap Activity, zone coaching, recovery
     python -m tools.demo_sim --list
 """
 
@@ -39,7 +41,9 @@ SCENARIOS = {
     "poor-signal": "HR goes high but the signal is poor -> no alert, dashboard says poor signal",
     "dropout": "Normal rest with a 16 s gap in data -> dashboard shows sensor offline",
     "normal": "Quiet rest only; HR stays near baseline, no alerts",
-    "walk": "Guided walk: presses Walk, drifts above the zone (voice: slow down), back in zone, ends, healthy recovery",
+    "walk": "Manual exercise (same as exercise): tap Activity, drift above the zone, come back, healthy recovery",
+    "exercise": "Manual exercise: tap Activity, drift above the heart-rate zone, come back, then a 1-minute recovery",
+    "auto": "Just moving around: heart rate rises while moving and a quiet activity starts on its own, with no voice",
 }
 
 
@@ -53,18 +57,25 @@ class Phase:
     quality: float = 0.9
     signal_status: str = "ok"
     send: bool = True
-    quiet: bool = False  # expected (e.g. cooling down after a walk): never counts toward an alert
+    quiet: bool = False  # expected (e.g. cooling down after exercise): never counts toward an alert
 
 
 def phases_for(scenario: str) -> list[Phase]:
     rest = Phase(60, "resting", BASELINE_HR, BASELINE_HR)
     exert = Phase(100, "moving", BASELINE_HR, 112)
-    if scenario == "walk":
+    if scenario in ("walk", "exercise"):
         return [
             Phase(30, "resting", BASELINE_HR, BASELINE_HR),
             Phase(110, "moving", BASELINE_HR + 2, 110),  # pace picks up; crosses the zone top
             Phase(160, "moving", 110, 94),  # slows down after the voice tip
             Phase(250, "resting", 94, BASELINE_HR + 2, shape="recovery", quiet=True),
+        ]
+    if scenario == "auto":
+        # Rest, then well over two minutes of movement with HR clearly above usual + 10,
+        # long enough for the default ACTIVITY_DETECT_S (120 s) to start a quiet activity.
+        return [
+            Phase(20, "resting", BASELINE_HR, BASELINE_HR),
+            Phase(170, "moving", 90, 108),
         ]
     if scenario == "normal":
         return [Phase(180, "resting", BASELINE_HR, BASELINE_HR)]
@@ -163,10 +174,20 @@ class Event:
     offset_s: float
     reading: Reading | None  # None = sensor dropout (nothing sent)
     alert: Alert | None
-    action: str | None = None  # "walk_start" / "walk_stop": press the dashboard's Walk button
+    action: str | None = None  # "activity_start" / "activity_stop": the dashboard's Activity button
 
 
-WALK_ACTIONS = {"walk": {30: "walk_start", 160: "walk_stop"}}
+ACTIVITY_ACTIONS = {
+    "walk": {30: "activity_start", 160: "activity_stop"},
+    "exercise": {30: "activity_start", 160: "activity_stop"},
+}
+
+_ACTION_PATHS = {
+    "activity_start": "/activity/start",
+    "walk_start": "/activity/start",
+    "activity_stop": "/activity/stop",
+    "walk_stop": "/activity/stop",
+}
 
 
 def build_timeline(scenario: str, context: PatientContext, t0_ms: int = 0, seed: int = 7) -> list[Event]:
@@ -239,7 +260,7 @@ def build_timeline(scenario: str, context: PatientContext, t0_ms: int = 0, seed:
             new_level = "normal"
         alert = make_alert(new_level, reading, context) if new_level != level else None
         level = new_level
-        events.append(Event(s, reading, alert, WALK_ACTIONS.get(scenario, {}).get(int(s))))
+        events.append(Event(s, reading, alert, ACTIVITY_ACTIONS.get(scenario, {}).get(int(s))))
         s += STEP_S
     return events
 
@@ -260,7 +281,7 @@ def run(scenario: str, base_url: str, speed: float, loop: bool) -> None:
             if delay > 0:
                 time.sleep(delay)
             if event.action:
-                path = "/walk/start" if event.action == "walk_start" else "/walk/stop"
+                path = _ACTION_PATHS[event.action]
                 requests.post(f"{base_url}{path}", timeout=15).raise_for_status()
                 print(f"{event.offset_s:5.0f}s  -> {event.action.replace('_', ' ')}")
             if event.reading is None:
