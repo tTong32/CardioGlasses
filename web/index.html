@@ -780,7 +780,7 @@
 
     const state = {
       live: false, mock: false, soundOn: false, missed: false, patient: null, lastReading: null, lastAlert: null,
-      lastReadingAt: null, storedOnly: false, sensorOffline: false, signalPoor: false, currentLevel: null,
+      lastReadingAt: null, storedOnly: false, sensorOffline: false, signalPoor: false, currentLevel: null, heldHr: null,
       history: [], socket: null, retryMs: 1000, walk: null, walkDismissed: false, walkStartLocal: null,
       checkin: null, caregiverName: null, patientSource: null, feedPaused: false, trend: []
     };
@@ -904,11 +904,17 @@
     function renderReading(r) {
       state.lastReading = r;
       state.lastReadingAt = Date.now();
-      $("hr").textContent = r.hr == null ? "—" : String(Math.round(r.hr));
-      if (r.hr != null && r.hr > 20) document.documentElement.style.setProperty("--beat", (60 / Math.min(r.hr, 220)).toFixed(3) + "s");
-      const poor = r.signal_status ? r.signal_status === "poor" : (r.quality == null || r.quality < minQuality());
+      // A reading with no signal status or quality (the continuous BPM) is not treated as poor.
+      const poor = r.signal_status ? r.signal_status === "poor" : (r.quality != null && r.quality < minQuality());
       state.signalPoor = poor;
       state.sensorOffline = r.signal_status === "offline";
+      // Always show a number: a poor reading keeps the last good heart rate on screen
+      // until the next good one arrives.
+      // Follow every heart rate the pipeline produces so the number keeps updating; only a
+      // missing heart rate (no usable pulse in the window) keeps the last value on screen.
+      if (r.hr != null) state.heldHr = r.hr;
+      if (r.hr != null && !poor && r.hr > 20) document.documentElement.style.setProperty("--beat", (60 / Math.min(r.hr, 220)).toFixed(3) + "s");
+      $("hr").textContent = state.heldHr == null ? "—" : String(Math.round(state.heldHr));
       if (r.hr != null && !poor) {
         state.trend.push({ t: Date.now(), hr: r.hr });
         const cutoff = Date.now() - TREND_MS;
@@ -1441,7 +1447,7 @@
       signal: '<path d="M3 12h3l2-5 3 10 2-5h2"/><path d="M18 9l4 4M22 9l-4 4"/>',
       record: '<rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M9 8h6M9 12h4"/><path d="M12 16h.01"/>'
     };
-    // One slot, most important first: glasses offline, weak signal, record source.
+    // One slot, most important first: glasses offline, record source. (Signal quality is shown as a held number instead.)
     function renderBanner() {
       const b = $("banner");
       let which = null, kind = "warn", text = "";
@@ -1450,10 +1456,6 @@
         which = "offline"; kind = "bad";
         const secs = Math.round((Date.now() - state.lastReadingAt) / 1000);
         text = stale ? "Glasses not sending. No data for " + secs + " s." : "Glasses not connected.";
-      } else if (state.signalPoor && state.lastReading) {
-        which = "signal";
-        const note = state.lastReading.signal_note;
-        text = note ? note + " No alerts until the signal improves." : "Weak signal. No alerts until it improves. Try adjusting your glasses.";
       } else if (state.patientSource === "cache") {
         which = "record"; kind = "info"; text = "Health record service unreachable. Using your last saved record.";
       } else if (state.patientSource === "local") {
@@ -1489,7 +1491,12 @@
       } catch (err) {}
       try { renderStatus(await getJSON("/status")); } catch (err) {}
       try { renderPatient(await getJSON("/patient")); } catch (err) { renderPatient(MOCK_PATIENT); }
-      try { const rs = await getJSON("/readings?limit=1"); if (rs.length) { renderReading(rs[0]); state.storedOnly = true; tick(); } } catch (err) {}
+      try {
+        const rs = await getJSON("/readings?limit=50");
+        const lastGood = rs.find((x) => x.hr != null && x.signal_status === "ok");
+        if (lastGood) state.heldHr = lastGood.hr;
+        if (rs.length) { renderReading(rs[0]); state.storedOnly = true; tick(); }
+      } catch (err) {}
       try {
         let w;
         try { w = await getJSON("/activity"); } catch (err) { w = await getJSON("/walk"); }
