@@ -116,6 +116,14 @@ class CaregiverEvent:
 
 
 Broadcast = Callable[[dict], Awaitable[None]]
+Speak = Callable[[str, str], Awaitable[None]]  # (text, kind)
+
+CHECKIN_PROMPT = "Are you OK? Nod if you're fine, or shake your head if you need help."
+
+
+def prompt_delay_s() -> float:
+    """Wait for the alert's own voice line to finish before asking."""
+    return float(os.environ.get("CHECKIN_PROMPT_DELAY_S") or 4)
 
 
 @dataclass
@@ -124,7 +132,9 @@ class SafetyNet:
     patient_name: Callable[[], str]
     current: Optional[CheckIn] = None
     events: list = field(default_factory=list)
+    speak: Optional[Speak] = None  # set by the app: voices the "nod if you're fine" prompt
     _timer: Optional[asyncio.Task] = None
+    _prompt: Optional[asyncio.Task] = None
 
     def snapshot(self) -> dict:
         return {
@@ -156,6 +166,8 @@ class SafetyNet:
                 now_ms(), "started", f"Checking on {name}: {alert.headline or 'heart rate alert'}. Waiting for a reply."))
             await self._push_checkin()
             self._timer = asyncio.create_task(self._expire(self.current.id))
+            if self.speak is not None:
+                self._prompt = asyncio.create_task(self._ask(self.current.id))
         elif alert.level == "normal" and waiting:
             await self._close("resolved", f"{self.patient_name()}'s heart rate is back to normal. No action needed.")
 
@@ -182,6 +194,15 @@ class SafetyNet:
             self.current.acknowledged = True
             await self._record(CaregiverEvent(now_ms(), "acknowledged", f"{caregiver_name().capitalize()} is on it."))
             await self._push_checkin()
+
+    async def _ask(self, checkin_id: str) -> None:
+        """Ask out loud, so the wearer can answer with a nod without looking at the phone."""
+        try:
+            await asyncio.sleep(prompt_delay_s())
+        except asyncio.CancelledError:
+            return
+        if self.current is not None and self.current.id == checkin_id and self.current.status == "waiting":
+            await self.speak(CHECKIN_PROMPT, "checkin")
 
     async def _expire(self, checkin_id: str) -> None:
         try:

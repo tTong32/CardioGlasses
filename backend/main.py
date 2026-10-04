@@ -189,6 +189,7 @@ async def speak_coach(text: str, kind: str) -> None:
     })
 
 
+safety.speak = speak_coach  # the check-in asks out loud: "nod if you're fine"
 coach = walk.Coach(hub.broadcast, speak_coach, lambda: patient.context, patient_display_name, note=safety.note)
 
 
