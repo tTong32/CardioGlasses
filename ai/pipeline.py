@@ -308,6 +308,7 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Print Readings and Alerts; don't post")
     parser.add_argument("--no-llm", action="store_true", help="Use templated wording instead of Gemini")
     parser.add_argument("--keep-time", action="store_true", help="Post sample timestamps instead of wall-clock time")
+    parser.add_argument("--explain", action="store_true", help="Show EMR and clinical reasoning (for demos)")
     args = parser.parse_args()
     if not args.csv and not args.scenario:
         parser.error("give a CSV path or --scenario")
@@ -323,7 +324,18 @@ def main() -> None:
         except requests.ConnectionError:
             parser.exit(1, f"Can't reach the backend at {args.base_url}. Is uvicorn running? (or use --dry-run)\n")
     explainer = Explainer(use_llm=not args.no_llm)
-    print(f"Patient {context.patient_id} - wording: {'Gemini ' + explainer.model if explainer.uses_llm else 'templates'}")
+
+    if args.explain:
+        from ai.demo_explain import print_patient_emr, print_clinical_reasoning, print_dashboard_context
+        print_patient_emr(context)
+        print_clinical_reasoning(context)
+        print_dashboard_context(context)
+        print(f"Patient {context.patient_id} - wording: {'Gemini ' + explainer.model if explainer.uses_llm else 'templates'}")
+        print("=" * 80)
+        print("📊 LIVE MONITORING SESSION")
+        print("=" * 80 + "\n")
+    else:
+        print(f"Patient {context.patient_id} - wording: {'Gemini ' + explainer.model if explainer.uses_llm else 'templates'}")
 
     samples = load_samples(args.csv, args.scenario)
     pipeline = Pipeline(context, explainer)
@@ -341,6 +353,12 @@ def main() -> None:
             if step is None:
                 continue
             print(describe(step, (step.reading.t - t0) / 1000.0), flush=True)
+
+            # Show alert reasoning in explain mode
+            if args.explain and step.alert is not None:
+                from ai.demo_explain import print_alert_reasoning
+                print_alert_reasoning(step.alert, pipeline.context)
+
             if args.dry_run:
                 continue
             if time.monotonic() - last_check >= CONTEXT_REFRESH_S:

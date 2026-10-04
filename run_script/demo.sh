@@ -55,9 +55,9 @@ fi
 
 sleep 2
 
-# Run the demo
-echo "▶️  Running demo..."
-python3 -m ai.pipeline data/demo_2min_elevated_rest.csv --speed 10 --no-llm
+# Run the demo with explanation mode
+echo "▶️  Running demo with clinical reasoning..."
+python3 -m ai.pipeline data/demo_2min_elevated_rest.csv --speed 10 --no-llm --explain
 
 # Cleanup
 echo ""
