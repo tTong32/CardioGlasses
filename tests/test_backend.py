@@ -367,3 +367,18 @@ def test_caregiver_text_retells_the_step_in_third_person():
     from ai.contracts import Alert
     alert = Alert.model_validate({**ALERT, "next_step": "Sit down and check your phone"})
     assert caregiver.reading_summary(alert, "Harriet").endswith("Harriet was asked to sit down and check their phone.")
+
+
+def test_only_actionable_alerts_are_spoken(app_env, monkeypatch):
+    finchnode_down(monkeypatch)
+    calls = []
+    monkeypatch.setenv("ELEVENLABS_API_KEY", "test-key")
+    monkeypatch.setattr(voice, "synthesize", lambda text, timeout=8: calls.append(text) or b"mp3")
+    with TestClient(main.app) as client, client.websocket_connect("/ws") as ws:
+        for level in ("monitor", "normal"):
+            client.post("/alerts", json={**ALERT, "level": level})
+            msg = next_alert(ws)
+            assert msg["speak"] is False and msg["audio_url"] is None
+        client.post("/alerts", json=ALERT)
+        assert next_alert(ws)["speak"] is True
+    assert calls == [ALERT["voice_text"]]

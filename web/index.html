@@ -1439,7 +1439,7 @@
       socket.onmessage = function (event) {
         let msg; try { msg = JSON.parse(event.data); } catch (err) { return; }
         if (msg.type === "reading" && msg.data) { state.storedOnly = false; renderReading(msg.data); }
-        if (msg.type === "alert" && msg.data) { renderAlert(msg.data, true); speak(msg.data, msg.audio_url); }
+        if (msg.type === "alert" && msg.data) { renderAlert(msg.data, true); if (msg.speak !== false) speak(msg.data, msg.audio_url); }
         if (msg.type === "checkin" && msg.data) renderCheckin(msg.data);
         if (msg.type === "walk" && msg.data) {
           if (msg.data.phase === "walking" && (!state.walk || state.walk.phase !== "walking")) {

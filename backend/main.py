@@ -273,17 +273,24 @@ async def _alert_audio(alert: Alert) -> tuple[str | None, str]:
     return (f"/audio/{name}" if name else None), source
 
 
+# Only alerts that ask the wearer to do something are spoken. "Keeping an eye" and
+# "back to normal" are shown on screen only, so the voice means something when it speaks.
+SPOKEN_LEVELS = ("notify", "escalate")
+
+
 @app.post("/alerts", response_model=Alert)
 async def post_alert(alert: Alert) -> Alert:
     _insert("alerts", alert.t, alert.model_dump_json())
+    spoken = alert.level in SPOKEN_LEVELS
     # Voice first so the sound and the card arrive together.
-    audio_url, audio_source = await _alert_audio(alert)
+    audio_url, audio_source = await _alert_audio(alert) if spoken else (None, "none")
     await hub.broadcast(
         {
             "type": "alert",
             "data": alert.model_dump(mode="json"),
             "audio_url": audio_url,
             "audio_source": audio_source,
+            "speak": spoken,
         }
     )
     await safety.on_alert(alert)
