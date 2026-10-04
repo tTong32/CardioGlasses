@@ -1,5 +1,7 @@
 """All tunable thresholds and the demo patient configuration."""
 
+import os
+
 from ai.contracts import PatientContext, Config
 
 # ============================================================================
@@ -89,6 +91,18 @@ EXPLAINER_MODEL = "gemini-flash-lite-latest"  # ~0.7 s; override with GEMINI_MOD
 EXPLAINER_TIMEOUT_S = 5.0  # wait this long, then send templated wording
 EXPLAINER_MAX_VOICE_WORDS = 25
 EXPLAINER_HR_BUCKET = 5  # bpm, for cache key
+# A reading at or above this, with no signal note, counts as clean without asking Gemini.
+SIGNAL_CHECK_STRONG = 0.85
+SIGNAL_CHECK_TIMEOUT_S = 1.5  # don't hold the alert longer than this for a second opinion
+
+
+def signal_check_may_delay() -> bool:
+    """When set, one artifact verdict can hold a monitor or notify for a single reading.
+
+    Escalate is never held. Off unless SIGNAL_CHECK_DELAY=1, so a wrong answer cannot
+    swallow the alert the demo is there to show.
+    """
+    return os.environ.get("SIGNAL_CHECK_DELAY", "").strip().lower() in ("1", "true", "yes")
 
 # ============================================================================
 # Synthetic data generation (Phase 1)

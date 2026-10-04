@@ -61,14 +61,19 @@ Rules:
 - Never diagnose or name a medical event (no "heart attack", "arrhythmia episode", "stroke").
 - Never give instructions or advice; the next step is fixed and added separately.
 - Never say what a medication does or how it affects them. You may mention one relevant condition or medication from the record only as context ("with your atrial fibrillation in mind").
-- reason: 1-2 sentences, at most 45 words, second person, for the phone screen. Include the current and usual heart rate and how long it has lasted when given.
-- voice_text: ONE short spoken sentence of at most {max_words} words saying what changed. No instructions, no decimals.
+- reason: 1-2 sentences, at most 45 words, second person, for the phone screen. Include the current and usual heart rate and how long it has lasted when given. When signal_caveat is present, work it in as one short clause about the measurement.
+- voice_text: ONE short spoken sentence of at most {max_words} words saying what changed. No instructions, no decimals. Do not repeat the signal caveat.
 """
 
 
 class Wording(BaseModel):
     reason: str
     voice_text: str
+
+
+class SignalVerdict(BaseModel):
+    artifact_suspected: bool
+    why: str
 
 
 @dataclass
@@ -78,6 +83,24 @@ class Explanation:
     voice_text: str
     next_step: str
     source: str  # "gemini", "cache", or "template"
+
+
+@dataclass
+class SignalCheck:
+    """A second opinion on the pulse. The alert is sent either way."""
+
+    verdict: str  # "clean", "artifact", or "unavailable"
+    note: str
+
+
+LOCAL_CLEAN = "Pulse looks steady."
+CHECK_UNAVAILABLE = "Signal check didn't run. The alert still stands."
+CHECK_PROMPT = """You cross-check one heart-rate alert for CardioGlasses. The monitoring rules have already chosen the alert. You only say whether the pulse measurement looks too messy to trust.
+Rules:
+- artifact_suspected is true only when the quality score is modest or signal_caveat describes clipping, missed beats, or a measurement problem.
+- A strong quality score with no caveat is not an artifact.
+- why: at most 12 words, plain English. No diagnosis, no advice, no instructions.
+"""
 
 
 def relevant_history(context: PatientContext) -> tuple[list[str], list[str]]:
@@ -121,7 +144,17 @@ def template(level: Level, kind: str, reading: Reading, context: PatientContext)
                 if level == "notify"
                 else "Your heart rate has stayed high for a while. Please sit down and contact your care team."
             )
-    return Explanation(HEADLINES[(level, kind)], reason, voice, NEXT_STEPS[level], "template")
+    return Explanation(HEADLINES[(level, kind)], _include_note(reason, reading), voice, NEXT_STEPS[level], "template")
+
+
+def _include_note(reason: str, reading: Reading) -> str:
+    """Keep a measurement caveat in the screen text when the model leaves it out."""
+    note = reading.signal_note
+    if not note:
+        return reason
+    if note[:24].lower() in reason.lower():
+        return reason
+    return f"{reason.rstrip()} {note}"
 
 
 OBSERVATION_MAX_WORDS = 16  # plus the fixed action sentence stays within EXPLAINER_MAX_VOICE_WORDS
@@ -184,7 +217,26 @@ class Explainer:
             self._cache[key] = wording
             source = "gemini"
         voice = f"{wording.voice_text.rstrip()} {VOICE_ACTIONS[level]}"
-        return Explanation(fallback.headline, wording.reason, voice, fallback.next_step, source)
+        return Explanation(fallback.headline, _include_note(wording.reason, reading), voice, fallback.next_step, source)
+
+    def check_signal(self, reading: Reading) -> SignalCheck:
+        """Say whether this alert's pulse looks messy. Never raises. A strong clean window skips the network."""
+        quality = reading.quality or 0.0
+        if quality >= cfg.SIGNAL_CHECK_STRONG and not reading.signal_note:
+            return SignalCheck("clean", LOCAL_CLEAN)
+        if self._client is None:
+            return SignalCheck("unavailable", CHECK_UNAVAILABLE)
+        future = self._pool.submit(self._ask_signal, reading)
+        try:
+            verdict = future.result(timeout=cfg.SIGNAL_CHECK_TIMEOUT_S)
+        except FutureTimeout:
+            log.warning("Signal check slower than %.1fs; the alert still stands", cfg.SIGNAL_CHECK_TIMEOUT_S)
+            future.add_done_callback(lambda done: done.exception())
+            return SignalCheck("unavailable", CHECK_UNAVAILABLE)
+        if verdict is None:
+            return SignalCheck("unavailable", CHECK_UNAVAILABLE)
+        note = verdict.why.strip().rstrip(".") + "."
+        return SignalCheck("artifact" if verdict.artifact_suspected else "clean", note)
 
     def _ask(self, level: Level, kind: str, reading: Reading, context: PatientContext) -> Optional[Wording]:
         from google.genai import types
@@ -202,6 +254,7 @@ class Explainer:
             "relevant_conditions": conditions,
             "rate_affecting_medication": meds,
             "next_step_shown_on_screen": NEXT_STEPS[level],
+            "signal_caveat": reading.signal_note,
         }
         try:
             response = self._client.models.generate_content(
@@ -224,3 +277,41 @@ class Explainer:
             log.warning("Gemini wording rejected, using template: %r", wording)
             return None
         return wording
+
+    def _ask_signal(self, reading: Reading) -> Optional[SignalVerdict]:
+        from google.genai import types
+
+        facts = {
+            "quality_0_to_1": reading.quality,
+            "signal_caveat": reading.signal_note,
+            "heart_rate_bpm": None if reading.hr is None else round(reading.hr),
+            "usual_resting_bpm": None if reading.baseline_hr is None else round(reading.baseline_hr),
+            "activity": reading.activity,
+            "seconds_elevated_while_resting": int(reading.persist_s or 0),
+        }
+        try:
+            response = self._client.models.generate_content(
+                model=self.model,
+                contents=f"Is this pulse measurement too messy to trust?\n{facts}",
+                config=types.GenerateContentConfig(
+                    system_instruction=CHECK_PROMPT,
+                    response_mime_type="application/json",
+                    response_schema=SignalVerdict,
+                    temperature=0.0,
+                    max_output_tokens=120,
+                    http_options=types.HttpOptions(timeout=GEMINI_DEADLINE_MS),
+                ),
+            )
+            verdict = response.parsed
+        except Exception as exc:
+            log.warning("Signal check failed; the alert still stands: %s", exc)
+            return None
+        if not isinstance(verdict, SignalVerdict) or not _valid_why(verdict.why):
+            log.warning("Signal check rejected: %r", verdict)
+            return None
+        return verdict
+
+
+def _valid_why(text: str) -> bool:
+    words = text.split()
+    return 0 < len(words) <= 16 and not ADVICE.search(text) and not FORBIDDEN.search(text)

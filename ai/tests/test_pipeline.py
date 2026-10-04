@@ -10,9 +10,9 @@ import pytest
 
 from ai.contracts import Config, PatientContext, Reading, Sample
 from ai.decision import Context, DecisionEngine
-from ai.explainer import Explainer, Wording, template
+from ai.explainer import Explainer, SignalCheck, SignalVerdict, Wording, template
 from ai.pipeline import Pipeline
-from ai.processing import HR_MIN_QUALITY, analyze_ppg, classify_activity
+from ai.processing import HR_MIN_QUALITY, analyze_ppg, classify_activity, plain_signal_note
 from ai.replay import SCENARIOS, generate_scenario
 
 CONTEXT = PatientContext(
@@ -211,6 +211,94 @@ def test_low_confidence_caps_at_monitor():
     engine = DecisionEngine(loose)
     alert = engine.update(reading(persist_s=30, quality=0.4))
     assert alert.level == "monitor"
+
+
+def test_plain_signal_note_names_the_problem():
+    assert plain_signal_note("") is None
+    assert plain_signal_note("weak pulse rhythm") == "The pulse rhythm is hard to make out."
+    assert "missed or extra" in plain_signal_note("missed or extra beats, sensor clipping")
+
+
+def test_template_mentions_a_soft_signal_flaw():
+    note = "Some beats look missed or extra."
+    alert = template("notify", "unexplained_elevation", reading(signal_note=note), CONTEXT)
+    assert note in alert.reason
+
+
+def test_strong_signal_skips_gemini():
+    models = FakeModels()
+    explainer = fake_explainer(models)
+    check = explainer.check_signal(reading(quality=0.95))
+    assert check.verdict == "clean" and models.calls == 0
+
+
+def test_gray_signal_without_a_client_stays_unavailable():
+    explainer = Explainer(use_llm=False)
+    check = explainer.check_signal(reading(quality=0.7, signal_note="Some beats look missed or extra."))
+    assert check == SignalCheck("unavailable", "Signal check didn't run. The alert still stands.")
+
+
+def test_gemini_signal_check_can_flag_an_artifact():
+    models = FakeModels(SignalVerdict(artifact_suspected=True, why="Some beats look missed"))
+    check = fake_explainer(models).check_signal(reading(quality=0.7))
+    assert check.verdict == "artifact" and "missed" in check.note
+    assert models.calls == 1
+
+
+def test_unsafe_signal_check_is_dropped():
+    models = FakeModels(SignalVerdict(artifact_suspected=True, why="This is a heart attack"))
+    check = fake_explainer(models).check_signal(reading(quality=0.7))
+    assert check.verdict == "unavailable"
+
+
+def test_signal_check_is_shown_and_does_not_block(monkeypatch):
+    monkeypatch.setattr("ai.decision.cfg.signal_check_may_delay", lambda: False)
+    class Stub:
+        def __init__(self):
+            self.explained = 0
+
+        def check_signal(self, reading):
+            return SignalCheck("artifact", "Some beats look missed or extra.")
+
+        def explain(self, level, kind, reading, context):
+            self.explained += 1
+            return template(level, kind, reading, context)
+
+    stub = Stub()
+    alert = DecisionEngine(CONTEXT, stub).update(reading(persist_s=30, quality=0.7))
+    assert alert.level == "notify" and alert.signal_check == "artifact"
+    assert stub.explained == 1
+
+
+def test_delay_holds_one_notify_then_sends_it(monkeypatch):
+    monkeypatch.setattr("ai.decision.cfg.signal_check_may_delay", lambda: True)
+
+    class Stub:
+        def check_signal(self, reading):
+            return SignalCheck("artifact", "Some beats look missed or extra.")
+
+        def explain(self, level, kind, reading, context):
+            return template(level, kind, reading, context)
+
+    engine = DecisionEngine(CONTEXT, Stub())
+    assert engine.update(reading(t=0, persist_s=30, quality=0.7)) is None
+    assert engine.level == "normal"
+    alert = engine.update(reading(t=2_000, persist_s=32, quality=0.7))
+    assert alert.level == "notify" and alert.signal_check == "artifact"
+
+
+def test_delay_never_holds_escalate(monkeypatch):
+    monkeypatch.setattr("ai.decision.cfg.signal_check_may_delay", lambda: True)
+
+    class Stub:
+        def check_signal(self, reading):
+            return SignalCheck("artifact", "Some beats look missed or extra.")
+
+        def explain(self, level, kind, reading, context):
+            return template(level, kind, reading, context)
+
+    alert = DecisionEngine(CONTEXT, Stub()).update(reading(persist_s=90, quality=0.7))
+    assert alert.level == "escalate"
 
 
 def test_alert_carries_reading_and_fixed_next_step():

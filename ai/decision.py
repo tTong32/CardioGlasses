@@ -58,6 +58,7 @@ class DecisionEngine:
         self._cooldown_cap = 0
         self._last_evidence_t: Optional[int] = None
         self.last_kind: Optional[str] = None
+        self._held_artifact = False  # one monitor/notify already held for a messy signal this episode
 
     def trusted(self, reading: Reading) -> bool:
         return (
@@ -141,9 +142,31 @@ class DecisionEngine:
         self._episode_peak = max(self._episode_peak, SEVERITY[target.level])
         return self._change(target, reading)
 
-    def _change(self, target: Target, reading: Reading) -> Alert:
+    def _signal_check(self, target: Target, reading: Reading):
+        """Second opinion for an alert that asks for attention. Normal has nothing to cross-check."""
+        if self.explainer is None or target.level == "normal":
+            return None
+        return self.explainer.check_signal(reading)
+
+    def _hold_for_artifact(self, target: Target, check) -> bool:
+        """One cycle only, and only when SIGNAL_CHECK_DELAY is on. Escalate always goes out."""
+        return bool(
+            check is not None
+            and check.verdict == "artifact"
+            and target.level in ("monitor", "notify")
+            and not self._held_artifact
+            and cfg.signal_check_may_delay()
+        )
+
+    def _change(self, target: Target, reading: Reading) -> Optional[Alert]:
+        check = self._signal_check(target, reading)
+        if self._hold_for_artifact(target, check):
+            self._held_artifact = True
+            return None
         self.level = target.level
         self.last_kind = target.kind
+        if target.level == "normal":
+            self._held_artifact = False
         if self.explainer is not None:
             words = self.explainer.explain(target.level, target.kind, reading, self.context)
         else:
@@ -159,6 +182,8 @@ class DecisionEngine:
             voice_text=words.voice_text,
             next_step=words.next_step,
             reading=reading,
+            signal_check=None if check is None else check.verdict,
+            signal_check_note=None if check is None else check.note,
         )
 
 

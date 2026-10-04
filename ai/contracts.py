@@ -44,6 +44,9 @@ class Reading(BaseModel):
     recovery_percentile: Optional[float]
     recovery_verdict: Optional[RecoveryVerdict]
     signal_status: Optional[SignalStatus]
+    # Why this window is hard to trust, in plain words, or null when it looks clean.
+    # Optional so older senders still validate.
+    signal_note: Optional[str] = None
 
 
 class Config(BaseModel):
@@ -80,3 +83,7 @@ class Alert(BaseModel):
     voice_text: Optional[str]
     next_step: Optional[str]
     reading: Reading
+    # Second opinion on the pulse, shown on the alert. Never required to send the alert.
+    # "clean", "artifact", or "unavailable". Optional so older senders still validate.
+    signal_check: Optional[str] = None
+    signal_check_note: Optional[str] = None

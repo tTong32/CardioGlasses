@@ -32,12 +32,14 @@ READING = {
     "quality": 0.86, "baseline_hr": 68, "deviation": 2.6, "persist_s": 48,
     "recovery_tau_s": None, "hr_drop_60s": None, "recovery_ratio": None,
     "recovery_percentile": None, "recovery_verdict": None, "signal_status": "ok",
+    "signal_note": None,
 }
 ALERT = {
     "t": 1760000050000, "level": "notify", "confidence": 0.8,
     "headline": "Elevated heart rate at rest", "reason": "Test reason",
     "voice_text": "Please sit down and check your phone.", "next_step": "Sit down and review",
     "reading": READING,
+    "signal_check": None, "signal_check_note": None,
 }
 
 

@@ -262,6 +262,11 @@
       margin-top: 4px; color: var(--ink-2); font-size: 0.98rem; line-height: 1.42;
       display: -webkit-box; -webkit-line-clamp: var(--clamp, 4); -webkit-box-orient: vertical; overflow: hidden;
     }
+    #signal-check:not([hidden]) {
+      margin-top: 6px; font-size: 0.86rem; font-weight: 700; line-height: 1.35; color: var(--ink-3);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    #signal-check[data-verdict="artifact"] { color: var(--monitor-tone); }
     .more {
       margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; min-height: 40px;
       padding: 0; border: 0; background: none; color: var(--accent); font-weight: 800; font-size: 0.98rem;
@@ -555,6 +560,7 @@
         <div class="u-top"><span class="eyebrow" id="u-eyebrow">Latest update</span><span class="u-time" id="u-time"></span></div>
         <h2 id="headline">Nothing to report</h2>
         <p id="reason">If anything changes, you'll see what happened here, in plain words.</p>
+        <p id="signal-check" hidden></p>
         <button type="button" class="more" id="open-why">Why? What we measured
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
         </button>
@@ -635,6 +641,7 @@
             <div class="row"><dt>How long it has lasted</dt><dd id="why-persist">—</dd></div>
             <div class="row"><dt>Moving or resting</dt><dd id="why-activity">—</dd></div>
             <div class="row"><dt>Signal</dt><dd id="why-quality">—</dd></div>
+            <div class="row" id="why-check-row" hidden><dt>Signal check</dt><dd id="why-check">—</dd></div>
             <div class="row"><dt>Recovery after activity</dt><dd id="why-recovery">—</dd></div>
             <div class="row"><dt>How sure we are</dt><dd id="why-confidence">—</dd></div>
           </dl>
@@ -758,11 +765,13 @@
       monitor: () => ({ t: Date.now(), level: "monitor", confidence: 0.65, headline: "A little higher than usual",
         reason: "Your heart rate is 84 while you're sitting still, about 16 above your usual 68. It's early, so we're just keeping an eye on it.",
         voice_text: "Your heart rate is a little higher than usual. Take it easy for a few minutes.", next_step: "Rest for a few minutes",
+        signal_check: "clean", signal_check_note: "Pulse looks steady.",
         reading: reading(84, { persist_s: 20 }) }),
       notify: () => ({ t: Date.now(), level: "notify", confidence: 0.82, headline: "Heart rate has stayed high while you rest",
-        reason: "Your heart rate has been around 104 beats per minute for the last 90 seconds while you've been sitting still, about 36 above your usual resting rate of 68. Because you have atrial fibrillation and take metoprolol, a rise this large at rest is worth checking, even if you feel fine. It may be something simple, like a missed dose or a warm room, but please sit down and notice how you feel.",
+        reason: "Your heart rate has been around 104 beats per minute for the last 90 seconds while you've been sitting still, about 36 above your usual resting rate of 68. Because you have atrial fibrillation and take metoprolol, a rise this large at rest is worth checking, even if you feel fine. It may be something simple, like a missed dose or a warm room, but please sit down and notice how you feel. Some beats look missed or extra.",
         voice_text: "Your heart rate has stayed high while you're resting. Please sit down and check your phone.", next_step: "Sit down and notice how you feel",
-        reading: reading(104, { persist_s: 90, quality: 0.86 }) }),
+        signal_check: "artifact", signal_check_note: "Some beats look missed or extra.",
+        reading: reading(104, { persist_s: 90, quality: 0.72, signal_note: "Some beats look missed or extra." }) }),
       escalate: () => ({ t: Date.now(), level: "escalate", confidence: 0.91, headline: "Still high after several minutes",
         reason: "Your heart rate has stayed around 128 for more than 4 minutes at rest, nearly double your usual 68. With heart failure and atrial fibrillation, this needs attention now. If you feel short of breath, dizzy, or have chest pain, call emergency services.",
         voice_text: "Your heart rate has been very high for several minutes. Please sit down and call your care team now.", next_step: "Sit down and call your care team now",
@@ -943,13 +952,20 @@
       $("why-dev-big").textContent = diff == null ? "—" : (diff > 0 ? "+" : "") + diff;
       $("why-persist").textContent = held ? (held >= 120 ? Math.round(held / 60) + " minutes" : held + " seconds") : "—";
       $("why-activity").textContent = r.activity === "moving" ? "Moving" : r.activity === "resting" ? "Resting" : "—";
-      $("why-quality").textContent = r.quality == null ? "Unknown" : (r.quality >= minQuality() ? "Good" : "Weak") + " (" + Number(r.quality).toFixed(2) + ")";
+      $("why-quality").textContent = (r.quality == null ? "Unknown" : (r.quality >= minQuality() ? "Good" : "Weak") + " (" + Number(r.quality).toFixed(2) + ")") + (r.signal_note ? ". " + r.signal_note : "");
       const verdicts = { normal: "Normal", slow: "Slow", very_slow: "Very slow" };
       $("why-recovery").textContent = r.recovery_verdict
         ? verdicts[r.recovery_verdict] + (r.recovery_tau_s == null ? "" : " · settles in ~" + Math.round(r.recovery_tau_s) + " s")
         : "No recent activity";
       const a = state.lastAlert;
       $("why-confidence").textContent = a && a.confidence != null ? Math.round(a.confidence * 100) + "%" : "—";
+      const checkRow = $("why-check-row");
+      if (a && a.signal_check_note) {
+        checkRow.hidden = false;
+        $("why-check").textContent = a.signal_check_note;
+      } else {
+        checkRow.hidden = true;
+      }
       let text;
       if (hr == null) text = "We don't have a trustworthy heart rate right now, so we're not making any calls.";
       else if (usual == null) text = "Your heart rate is " + hr + ". We're still learning your usual resting rate, which takes about a minute of sitting still.";
@@ -958,7 +974,7 @@
         text = "Your heart rate is " + hr + ", " + where + " your usual " + usual;
         text += held >= 2 ? " for " + (held >= 120 ? Math.round(held / 60) + " minutes" : held + " seconds") : "";
         text += r.activity === "moving" ? ", while you're moving." : r.activity === "resting" ? ", while you're resting." : ".";
-        if (r.quality != null && r.quality < minQuality()) text += " The signal is weak, so this reading isn't used for alerts.";
+        if (r.quality != null && r.quality < minQuality()) text += r.signal_note ? " " + r.signal_note + " This reading isn't used for alerts." : " The signal is weak, so this reading isn't used for alerts.";
       }
       $("why-summary").textContent = text;
     }
@@ -973,6 +989,17 @@
       card.dataset.level = a.level || "";
       $("headline").textContent = a.headline || "Alert";
       $("reason").textContent = a.reason || "";
+      const check = $("signal-check");
+      if (a.signal_check && a.signal_check_note) {
+        check.hidden = false;
+        check.dataset.verdict = a.signal_check;
+        const note = String(a.signal_check_note).replace(/\.$/, "");
+        check.textContent = "Signal check: " + note + ".";
+      } else {
+        check.hidden = true;
+        check.removeAttribute("data-verdict");
+        check.textContent = "";
+      }
       $("u-time").innerHTML = "";
       const dot = document.createElement("span"); dot.className = "lvl-dot"; dot.dataset.level = a.level || "";
       $("u-time").append(dot, document.createTextNode((LEVEL_SHORT[a.level] || "") + " · " + fmtTime(a.t)));
@@ -1424,7 +1451,9 @@
         const secs = Math.round((Date.now() - state.lastReadingAt) / 1000);
         text = stale ? "Glasses not sending. No data for " + secs + " s." : "Glasses not connected.";
       } else if (state.signalPoor && state.lastReading) {
-        which = "signal"; text = "Weak signal. No alerts until it improves. Try adjusting your glasses.";
+        which = "signal";
+        const note = state.lastReading.signal_note;
+        text = note ? note + " No alerts until the signal improves." : "Weak signal. No alerts until it improves. Try adjusting your glasses.";
       } else if (state.patientSource === "cache") {
         which = "record"; kind = "info"; text = "Health record service unreachable. Using your last saved record.";
       } else if (state.patientSource === "local") {
@@ -1569,6 +1598,7 @@
         demo.reset(); state.history = []; mock.target = 72;
         $("update").dataset.level = ""; $("headline").textContent = "Nothing to report";
         $("reason").textContent = "If anything changes, you'll see what happened here, in plain words.";
+        $("signal-check").hidden = true; $("signal-check").textContent = "";
         $("u-time").textContent = ""; $("why-what-sec").hidden = true;
         $("simulate-label").textContent = "Send a test alert";
         seedTrend(() => 71);
@@ -1668,7 +1698,7 @@
         ["Last 5 seconds", () => { if (!state.checkin || state.checkin.status !== "waiting") localCheckin("notify"); state.checkinDeadline = Date.now() + 5000; }]
       ]],
       ["Banners", [
-        ["Weak signal", () => { mock.extra = Object.assign({}, mock.extra, { quality: 0.38, signal_status: "poor" }); renderReading(reading(mock.target, mock.extra)); }],
+        ["Weak signal", () => { mock.extra = Object.assign({}, mock.extra, { quality: 0.38, signal_status: "poor", signal_note: "The pulse rhythm is hard to make out." }); renderReading(reading(mock.target, mock.extra)); }],
         ["Glasses offline", () => { state.feedPaused = true; state.lastReadingAt = Date.now() - 14000; tick(); }],
         ["Record from cache", () => renderStatus(Object.assign({}, MOCK_STATUS, { patient_source: "cache" }))],
         ["Clear banners", () => { state.feedPaused = false; mock.extra = {}; renderStatus(MOCK_STATUS); renderReading(reading(mock.target)); }]

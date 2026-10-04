@@ -31,7 +31,7 @@ from ai.contracts import Alert, PatientContext, Reading, Sample
 from ai.decision import POST_EXERTION_GRACE_S, Context, DecisionEngine
 from ai.explainer import Explainer
 from ai.gesture import GestureDetector
-from ai.processing import analyze_ppg, classify_activity
+from ai.processing import analyze_ppg, classify_activity, plain_signal_note
 from ai.recovery import RecoveryModel, RecoveryOutput
 from ai.replay import SCENARIOS, generate_scenario, iter_samples, load_csv
 
@@ -193,6 +193,7 @@ class Pipeline:
             recovery_percentile=None if shown.recovery_percentile is None else round(shown.recovery_percentile, 1),
             recovery_verdict=shown.recovery_verdict,
             signal_status=signal_status,
+            signal_note=plain_signal_note(ppg.reason),
         )
         alert = self.engine.update(
             reading,

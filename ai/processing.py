@@ -153,6 +153,31 @@ def signal_quality(samples: list[Sample]) -> Optional[float]:
     return analyze_ppg(samples).quality
 
 
+# Internal reason strings from analyze_ppg, in the words the dashboard should show.
+_SIGNAL_NOTES = {
+    "weak pulse rhythm": "The pulse rhythm is hard to make out.",
+    "irregular beat timing": "The beats look uneven.",
+    "uneven pulse height": "The pulse strength is uneven.",
+    "missed or extra beats": "Some beats look missed or extra.",
+    "sensor clipping": "The sensor is saturating.",
+    "flat signal (no skin contact?)": "No pulse detected. Check that the glasses are sitting against your skin.",
+    "too many missing PPG samples": "The glasses stopped sending pulse data.",
+    "no clear beats": "No clear pulse in this window.",
+    "too few regular beats": "Not enough steady beats to trust a heart rate.",
+    "window too short": "Not enough data yet.",
+    "unreliable": "This window doesn't look like a steady pulse.",
+}
+
+
+def plain_signal_note(reason: str) -> Optional[str]:
+    """Turn analyze_ppg's reason into one or two short sentences, or None when it's clean."""
+    parts = [part.strip() for part in reason.split(",") if part.strip()]
+    lines = [_SIGNAL_NOTES[part] for part in parts if part in _SIGNAL_NOTES]
+    if not lines:
+        return None
+    return " ".join(lines[:2])
+
+
 def classify_activity(samples: list[Sample]) -> Optional[Activity]:
     """Resting or moving from the spread of acceleration magnitude (g) over the window.
 

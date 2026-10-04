@@ -71,7 +71,7 @@ python -m tools.serial_check --port COM5 --seconds 120 --out data/rec_rest.csv
 
 ### AI pipeline
 
-Turns samples into Readings every 2 s (10 s analysis window): heart rate and beat intervals from the PPG, an honest 0-1 quality score, resting/moving from the IMU, a resting baseline (frozen during episodes), recovery after exertion, and a rules-based alert level. Gemini (`GEMINI_MODEL`, default `gemini-flash-lite-latest`) writes the wording; templates take over if it's slow or unavailable.
+Turns samples into Readings every 2 s (10 s analysis window): heart rate and beat intervals from the PPG, an honest 0-1 quality score, resting/moving from the IMU, a resting baseline (frozen during episodes), recovery after exertion, and a rules-based alert level. Gemini (`GEMINI_MODEL`, default `gemini-flash-lite-latest`) writes the wording and, when a monitor, notify, or escalate alert is about to fire on a borderline pulse, a signal-check line for the dashboard. The check does not block the alert. Set `SIGNAL_CHECK_DELAY=1` to let one "artifact" answer hold a monitor or notify for a single reading; escalate is never held. Templates take over if Gemini is slow or unavailable. A weak window also carries `signal_note`, shown on the dashboard, and that note is included in the wording.
 
 ```bash
 python -m ai.pipeline --scenario elevated_rest --speed 10        # synthetic, posts to the backend
