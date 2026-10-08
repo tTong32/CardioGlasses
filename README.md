@@ -1,5 +1,7 @@
 # CardioGlasses
 
+**🏆 1st Place Winner - FinchNode HealthTech Stream, MHacks 2026**
+
 Smart glasses that monitor heart patients continuously, comparing real-time PPG (pulse) and IMU (motion) data against personal baselines and clinical records to provide contextual alerts via voice and phone dashboard.
 
 **24-hour hackathon project** • Python + FastAPI + vanilla JS • ElevenLabs voice • FinchNode health records
